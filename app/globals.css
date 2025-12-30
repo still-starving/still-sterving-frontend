@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Dark Mode Only - Main Background */
+  --background: #0f0f14;
+  --foreground: #f5f5f5;
+
+  /* Surface Cards */
+  --card: #1a1a22;
+  --card-foreground: #f5f5f5;
+
+  /* Popover */
+  --popover: #1a1a22;
+  --popover-foreground: #f5f5f5;
+
+  /* Primary - Neon Orange */
+  --primary: #ff9f1c;
+  --primary-foreground: #0f0f14;
+
+  /* Secondary - Teal */
+  --secondary: #4ecdc4;
+  --secondary-foreground: #0f0f14;
+
+  /* Tertiary - Soft Yellow */
+  --tertiary: #ffe66d;
+  --tertiary-foreground: #0f0f14;
+
+  /* Muted */
+  --muted: #1a1a22;
+  --muted-foreground: #9ca3af;
+
+  /* Accent */
+  --accent: #ff9f1c;
+  --accent-foreground: #0f0f14;
+
+  /* Destructive */
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #f5f5f5;
+
+  /* Border & Input */
+  --border: rgba(78, 205, 196, 0.15);
+  --input: rgba(78, 205, 196, 0.15);
+  --ring: #ff9f1c;
+
+  /* Status Colors */
+  --status-available: #10b981;
+  --status-requested: #ff9f1c;
+  --status-taken: #6b7280;
+  --status-urgent: #ef4444;
+
+  --radius: 0.875rem;
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-status-available: var(--status-available);
+  --color-status-requested: var(--status-requested);
+  --color-status-taken: var(--status-taken);
+  --color-status-urgent: var(--status-urgent);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(255, 159, 28, 0.3);
+  }
+
+  .glow-secondary {
+    box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+  }
+
+  .glow-hover:hover {
+    box-shadow: 0 0 25px rgba(255, 159, 28, 0.4);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .pulse-urgent {
+    animation: pulse-urgent 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-urgent {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+}
