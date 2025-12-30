@@ -63,6 +63,7 @@ const mockFoodPosts: FoodPost[] = [
     quantity: "2 pizzas",
     pickupTime: "Today 8-9 PM",
     location: "Downtown, 5th Street",
+    imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=600&fit=crop&q=80",
     userId: "2",
     userName: "John Doe",
     status: "available",
@@ -76,10 +77,39 @@ const mockFoodPosts: FoodPost[] = [
     quantity: "4 servings",
     pickupTime: "Tomorrow 12-2 PM",
     location: "East Side, Park Avenue",
+    imageUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop&q=80",
     userId: "3",
     userName: "Jane Smith",
     status: "available",
     createdAt: "2024-01-15T17:30:00Z",
+  },
+  {
+    id: "3",
+    title: "Fresh Sushi Platter",
+    description: "Ordered too much sushi for lunch. Premium quality, still fresh and delicious!",
+    cuisine: "Japanese",
+    quantity: "24 pieces",
+    pickupTime: "Today 6-7 PM",
+    location: "Midtown, Central Plaza",
+    imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=600&fit=crop&q=80",
+    userId: "2",
+    userName: "John Doe",
+    status: "available",
+    createdAt: "2024-01-15T16:45:00Z",
+  },
+  {
+    id: "4",
+    title: "Homemade Tacos & Guacamole",
+    description: "Made way too many tacos! Beef and chicken options with fresh guac and salsa.",
+    cuisine: "Mexican",
+    quantity: "10 tacos",
+    pickupTime: "Today 7-8 PM",
+    location: "West End, Maple Street",
+    imageUrl: "https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=800&h=600&fit=crop&q=80",
+    userId: "3",
+    userName: "Jane Smith",
+    status: "available",
+    createdAt: "2024-01-15T16:00:00Z",
   },
 ]
 
@@ -92,6 +122,24 @@ const mockHungerBroadcasts: HungerBroadcast[] = [
     userId: "2",
     userName: "John Doe",
     createdAt: "2024-01-15T19:00:00Z",
+  },
+  {
+    id: "2",
+    message: "Family of 4 needs dinner. Would be grateful for any assistance.",
+    location: "South Side, Oak Street",
+    urgent: false,
+    userId: "3",
+    userName: "Jane Smith",
+    createdAt: "2024-01-15T18:30:00Z",
+  },
+  {
+    id: "3",
+    message: "Urgent! Haven't eaten since yesterday. Please help if you can.",
+    location: "Downtown, Main Square",
+    urgent: true,
+    userId: "2",
+    userName: "John Doe",
+    createdAt: "2024-01-15T17:45:00Z",
   },
 ]
 
@@ -172,8 +220,17 @@ export const mockApi = {
     if (!type || type === "all" || type === "food") {
       feed.push(
         ...mockFoodPosts.map((post) => ({
-          ...post,
           type: "food",
+          id: post.id,
+          title: post.title,
+          description: post.description,
+          quantity: post.quantity,
+          location: post.location,
+          expiryDate: post.pickupTime, // Map pickupTime to expiryDate
+          status: post.status,
+          ownerName: post.userName, // Map userName to ownerName
+          imageUrl: post.imageUrl,
+          isOwner: currentUser?.id === post.userId,
         })),
       )
     }
@@ -181,14 +238,20 @@ export const mockApi = {
     if (!type || type === "all" || type === "hunger") {
       feed.push(
         ...mockHungerBroadcasts.map((broadcast) => ({
-          ...broadcast,
           type: "hunger",
+          id: broadcast.id,
+          message: broadcast.message,
+          location: broadcast.location,
+          urgency: broadcast.urgent ? "urgent" : "normal",
+          userName: broadcast.userName,
+          timePosted: broadcast.createdAt,
+          isOwner: currentUser?.id === broadcast.userId,
         })),
       )
     }
 
     // Sort by date
-    return feed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return feed.sort((a, b) => new Date(b.createdAt || b.timePosted).getTime() - new Date(a.createdAt || a.timePosted).getTime())
   },
 
   // Food Posts

@@ -124,4 +124,14 @@
       opacity: 0.6;
     }
   }
+
+  /* Hide scrollbar for Netflix-style horizontal scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

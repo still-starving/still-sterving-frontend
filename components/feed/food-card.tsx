@@ -2,12 +2,14 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { MapPin, Clock, User, Utensils } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
+import Image from "next/image"
+import { MapModal } from "@/components/ui/map-modal"
 
 interface FoodCardProps {
   post: {
@@ -19,6 +21,7 @@ interface FoodCardProps {
     expiryDate: string
     status: "available" | "requested" | "taken"
     ownerName: string
+    imageUrl?: string
     isOwner?: boolean
   }
   onUpdate?: () => void
@@ -28,15 +31,16 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isRequesting, setIsRequesting] = useState(false)
+  const [isMapOpen, setIsMapOpen] = useState(false)
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
-        return "bg-status-available/20 text-status-available border-status-available/30"
+        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
       case "requested":
-        return "bg-status-requested/20 text-status-requested border-status-requested/30"
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30"
       case "taken":
-        return "bg-status-taken/20 text-status-taken border-status-taken/30"
+        return "bg-slate-500/20 text-slate-400 border-slate-500/30"
       default:
         return ""
     }
@@ -80,68 +84,132 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
     }
   }
 
+  // Generate a placeholder image based on food title
+  const placeholderImage = post.imageUrl || `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80`
+
   return (
-    <Card className="overflow-hidden border-border/50 hover:border-primary/30 transition-colors">
-      <CardContent className="p-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-            <Utensils className="h-3 w-3" />
-            FOOD AVAILABLE
+    <Card className="group overflow-hidden border-border/40 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 bg-card/50 backdrop-blur-sm">
+      {/* Image Section */}
+      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20">
+        <Image
+          src={placeholderImage}
+          alt={post.title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+        {/* Status Badge - Top Right */}
+        <div className="absolute top-3 right-3">
+          <Badge className={`${getStatusColor(post.status)} backdrop-blur-md font-semibold`}>
+            {post.status.toUpperCase()}
           </Badge>
-          <Badge className={getStatusColor(post.status)}>{post.status.toUpperCase()}</Badge>
         </div>
 
-        {/* Content */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold text-foreground text-balance">{post.title}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-2">{post.description}</p>
+        {/* Title Overlay - Bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">
+            {post.title}
+          </h3>
         </div>
+      </div>
 
-        {/* Details */}
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Utensils className="h-4 w-4 text-secondary" />
-            <span>{post.quantity}</span>
+      {/* Content Section */}
+      <div className="p-4 space-y-4">
+        {/* Description */}
+        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+          {post.description}
+        </p>
+
+        {/* Details Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <Utensils className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Quantity</span>
+              <span className="font-medium text-foreground">{post.quantity}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="h-4 w-4 text-tertiary" />
-            <span className={getTimeRemaining(post.expiryDate).includes("Expired") ? "text-destructive" : ""}>
-              {getTimeRemaining(post.expiryDate)}
-            </span>
+
+          <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-tertiary/10">
+              <Clock className="h-4 w-4 text-tertiary" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Expires</span>
+              <span className={`font-medium ${getTimeRemaining(post.expiryDate).includes("Expired") ? "text-destructive" : "text-foreground"}`}>
+                {getTimeRemaining(post.expiryDate)}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4 text-secondary" />
-          <span className="font-medium">{post.location}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-border/50">
-          <User className="h-4 w-4" />
-          <span>Posted by {post.ownerName}</span>
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0">
-        {post.isOwner ? (
-          <Button variant="outline" className="w-full bg-transparent" onClick={() => router.push(`/food/${post.id}`)}>
-            View Details
-          </Button>
-        ) : post.status === "available" ? (
+        {/* Location */}
+        <div className="flex items-center justify-between gap-2 text-sm p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-secondary flex-shrink-0" />
+            <span className="font-medium text-foreground">{post.location}</span>
+          </div>
           <Button
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-hover"
-            onClick={handleRequest}
-            disabled={isRequesting}
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs hover:bg-secondary/20 hover:text-secondary"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsMapOpen(true)
+            }}
           >
-            {isRequesting ? "Requesting..." : "Request Food"}
+            View Map
           </Button>
-        ) : (
-          <Button variant="outline" className="w-full bg-transparent" disabled>
-            {post.status === "taken" ? "No Longer Available" : "Already Requested"}
-          </Button>
-        )}
-      </CardFooter>
+        </div>
+
+        {/* Map Modal */}
+        <MapModal
+          isOpen={isMapOpen}
+          onClose={() => setIsMapOpen(false)}
+          location={post.location}
+          title={post.title}
+        />
+
+        {/* Posted By */}
+        <div className="flex items-center gap-2 text-sm pt-2 border-t border-border/50">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20">
+            <User className="h-3 w-3 text-primary" />
+          </div>
+          <span className="text-muted-foreground">
+            Posted by <span className="font-medium text-foreground">{post.ownerName}</span>
+          </span>
+        </div>
+
+        {/* Action Button */}
+        <div className="pt-2">
+          {post.isOwner ? (
+            <Button
+              variant="outline"
+              className="w-full bg-transparent hover:bg-primary/5"
+              onClick={() => router.push(`/food/${post.id}`)}
+            >
+              View Details
+            </Button>
+          ) : post.status === "available" ? (
+            <Button
+              className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all duration-300"
+              onClick={handleRequest}
+              disabled={isRequesting}
+            >
+              {isRequesting ? "Requesting..." : "Request Food"}
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full bg-transparent" disabled>
+              {post.status === "taken" ? "No Longer Available" : "Already Requested"}
+            </Button>
+          )}
+        </div>
+      </div>
     </Card>
   )
 }
