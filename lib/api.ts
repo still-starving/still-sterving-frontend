@@ -4,28 +4,149 @@ const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === "true"
 
 // Helper functions for safe localStorage access (SSR-safe)
-const getAuthToken = (): string | null => {
+// Access Token
+const getAccessToken = (): string | null => {
   if (typeof window === "undefined") return null
-  return localStorage.getItem("auth_token")
+  return localStorage.getItem("access_token")
 }
 
-const setAuthToken = (token: string): void => {
+const setAccessToken = (token: string): void => {
   if (typeof window !== "undefined") {
-    localStorage.setItem("auth_token", token)
+    localStorage.setItem("access_token", token)
   }
 }
 
+const removeAccessToken = (): void => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token")
+  }
+}
+
+// Refresh Token
+const getRefreshToken = (): string | null => {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem("refresh_token")
+}
+
+const setRefreshToken = (token: string): void => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("refresh_token", token)
+  }
+}
+
+const removeRefreshToken = (): void => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("refresh_token")
+  }
+}
+
+// Token Expiry
+const getExpiresAt = (): Date | null => {
+  if (typeof window === "undefined") return null
+  const expiresAt = localStorage.getItem("expires_at")
+  return expiresAt ? new Date(expiresAt) : null
+}
+
+const setExpiresAt = (expiresAt: string): void => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("expires_at", expiresAt)
+  }
+}
+
+const removeExpiresAt = (): void => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("expires_at")
+  }
+}
+
+// Check if token needs refresh (expires in less than 1 minute)
+const isTokenExpiringSoon = (): boolean => {
+  const expiresAt = getExpiresAt()
+  if (!expiresAt) return true
+
+  const now = new Date()
+  const timeUntilExpiry = expiresAt.getTime() - now.getTime()
+  return timeUntilExpiry < 60000 // Less than 1 minute
+}
+
+// Logout helper
+const logout = (): void => {
+  removeAccessToken()
+  removeRefreshToken()
+  removeExpiresAt()
+
+  if (typeof window !== "undefined") {
+    window.location.href = "/login"
+  }
+}
+
+// Refresh access token
+let isRefreshing = false
+let refreshPromise: Promise<string | null> | null = null
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  // Prevent multiple simultaneous refresh attempts
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
+  }
+
+  isRefreshing = true
+  refreshPromise = (async () => {
+    const refreshToken = getRefreshToken()
+
+    if (!refreshToken) {
+      logout()
+      return null
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      })
+
+      if (!response.ok) {
+        // Refresh token expired or invalid
+        logout()
+        return null
+      }
+
+      const data = await response.json()
+
+      // Update stored tokens
+      setAccessToken(data.accessToken)
+      setRefreshToken(data.refreshToken)
+      setExpiresAt(data.expiresAt)
+
+      return data.accessToken
+    } catch (error) {
+      console.error("Token refresh failed:", error)
+      logout()
+      return null
+    } finally {
+      isRefreshing = false
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
+// Legacy support - map old function to new one
+const getAuthToken = getAccessToken
+const setAuthToken = setAccessToken
 const removeAuthToken = (): void => {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("auth_token")
-  }
+  removeAccessToken()
+  removeRefreshToken()
+  removeExpiresAt()
 }
 
 interface RequestOptions extends RequestInit {
   requiresAuth?: boolean
 }
 
-async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestOptions = {}, retryCount = 0): Promise<T> {
   if (USE_MOCK_API) {
     return handleMockRequest<T>(endpoint, options)
   }
@@ -42,9 +163,17 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Pr
   }
 
   if (requiresAuth) {
-    const token = getAuthToken()
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
+    // Check if token needs refresh before making request
+    if (isTokenExpiringSoon()) {
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        headers["Authorization"] = `Bearer ${newToken}`
+      }
+    } else {
+      const token = getAccessToken()
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
     }
   }
 
@@ -54,9 +183,16 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Pr
       headers,
     })
 
-    if (response.status === 401) {
-      removeAuthToken()
-      window.location.href = "/login"
+    // Handle 401 - try refreshing token once
+    if (response.status === 401 && retryCount === 0) {
+      const newToken = await refreshAccessToken()
+
+      if (newToken) {
+        // Retry the request with new token
+        return apiRequest<T>(endpoint, options, retryCount + 1)
+      }
+
+      // Refresh failed, logout handled in refreshAccessToken
       throw new Error("Unauthorized")
     }
 
@@ -170,6 +306,23 @@ export const api = {
       body: JSON.stringify(data),
       requiresAuth: false,
     }),
+
+  logout: async () => {
+    const refreshToken = getRefreshToken()
+    if (refreshToken) {
+      try {
+        await apiRequest("/auth/logout", {
+          method: "POST",
+          body: JSON.stringify({ refreshToken }),
+          requiresAuth: false,
+        })
+      } catch (error) {
+        console.error("Logout API call failed:", error)
+      }
+    }
+    // Always clear tokens and redirect
+    logout()
+  },
 
   getMe: () => apiRequest("/auth/me"),
 

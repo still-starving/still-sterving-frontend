@@ -131,7 +131,7 @@ export default function FeedPage() {
                   <div className="relative group">
                     <div
                       ref={foodScrollRef}
-                      className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth px-4 md:px-6 pb-4"
+                      className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth px-4 md:px-6 py-8"
                       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                     >
                       {foodItems.map((item, index) => (
@@ -174,7 +174,7 @@ export default function FeedPage() {
                   <div className="relative group">
                     <div
                       ref={hungerScrollRef}
-                      className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth px-4 md:px-6 pb-4"
+                      className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth px-4 md:px-6 py-8"
                       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                     >
                       {hungerItems.map((item, index) => (

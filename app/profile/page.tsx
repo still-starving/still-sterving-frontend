@@ -49,9 +49,8 @@ export default function ProfilePage() {
     fetchProfile()
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem("auth_token")
-    router.push("/login")
+  const handleLogout = async () => {
+    await api.logout()
   }
 
   if (isLoading) {

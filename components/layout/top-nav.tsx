@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,14 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { User, LogOut } from "lucide-react"
+import { api } from "@/lib/api"
 
 export function TopNav() {
   const pathname = usePathname()
-  const router = useRouter()
 
-  const handleLogout = () => {
-    localStorage.removeItem("auth_token")
-    router.push("/login")
+  const handleLogout = async () => {
+    await api.logout()
   }
 
   const navLinks = [

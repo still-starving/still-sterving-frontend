@@ -44,17 +44,25 @@ export default function MyPostsPage() {
     setIsLoading(true)
     try {
       const [foodData, hungerData] = await Promise.all([
-        api.getMyPosts() as Promise<FoodPost[]>,
-        api.getMyHungerBroadcasts() as Promise<HungerBroadcast[]>,
+        api.getMyPosts(),
+        api.getMyHungerBroadcasts(),
       ])
-      setFoodPosts(foodData)
-      setHungerBroadcasts(hungerData)
+
+      // Ensure we always have arrays, even if API returns an object or null
+      const foodArray = Array.isArray(foodData) ? foodData : []
+      const hungerArray = Array.isArray(hungerData) ? hungerData : []
+
+      setFoodPosts(foodArray)
+      setHungerBroadcasts(hungerArray)
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Failed to load posts",
         description: error instanceof Error ? error.message : "Something went wrong.",
       })
+      // Set empty arrays on error
+      setFoodPosts([])
+      setHungerBroadcasts([])
     } finally {
       setIsLoading(false)
     }

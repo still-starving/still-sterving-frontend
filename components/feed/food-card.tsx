@@ -2,8 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import { MapPin, Clock, User, Utensils } from "lucide-react"
+import { MapPin, Clock, User, Utensils, Play } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
@@ -34,15 +33,16 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [imageError, setImageError] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
-        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+        return "bg-emerald-500 text-white"
       case "requested":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30"
+        return "bg-amber-500 text-white"
       case "taken":
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30"
+        return "bg-slate-500 text-white"
       default:
         return ""
     }
@@ -59,14 +59,15 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
     if (hours < 24) {
-      return `${hours}h ${minutes}m left`
+      return `${hours}h ${minutes}m`
     }
 
     const days = Math.floor(hours / 24)
-    return `${days}d ${hours % 24}h left`
+    return `${days}d ${hours % 24}h`
   }
 
-  const handleRequest = async () => {
+  const handleRequest = async (e: React.MouseEvent) => {
+    e.stopPropagation()
     setIsRequesting(true)
     try {
       await api.requestFood(post.id)
@@ -101,178 +102,197 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
   }
 
-  // Use first image from array or fallback to placeholder
-  const displayImage = (post.imageUrls && post.imageUrls.length > 0)
-    ? post.imageUrls[0]
-    : `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80`
-
-
   return (
-    <Card className="group overflow-hidden border-border/40 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 bg-card/50 backdrop-blur-sm">
-      {/* Image Section with Carousel */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20">
-        <Image
-          src={imageError ? `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80` : images[currentImageIndex]}
-          alt={post.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          onError={() => setImageError(true)}
-        />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+    <div
+      className="group relative transition-all duration-300 ease-out cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => router.push(`/food/${post.id}`)}
+    >
+      {/* Main Card */}
+      <div className={`
+        relative rounded-lg overflow-hidden bg-black
+        transition-all duration-300 ease-out origin-center
+        ${isHovered ? 'scale-110 z-50 shadow-2xl shadow-black/60' : 'scale-100'}
+      `}>
+        {/* Image Section */}
+        <div className="relative aspect-[16/9] overflow-hidden">
+          <Image
+            src={imageError ? `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80` : images[currentImageIndex]}
+            alt={post.title}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onError={() => setImageError(true)}
+            priority
+          />
 
-        {/* Image Navigation - Only show if multiple images */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 z-10"
-              aria-label="Previous image"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 z-10"
-              aria-label="Next image"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
+          {/* Base Gradient - Always visible */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-            {/* Dot Indicators */}
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-              {images.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setCurrentImageIndex(index)
-                  }}
-                  className={`w-2 h-2 rounded-full transition-all ${index === currentImageIndex
-                    ? 'bg-white w-6'
-                    : 'bg-white/50 hover:bg-white/75'
-                    }`}
-                  aria-label={`Go to image ${index + 1}`}
-                />
-              ))}
-            </div>
-          </>
-        )}
+          {/* Enhanced Gradient on Hover */}
+          <div className={`
+            absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent
+            transition-opacity duration-300
+            ${isHovered ? 'opacity-100' : 'opacity-0'}
+          `} />
 
-        {/* Status Badge - Top Right */}
-        <div className="absolute top-3 right-3">
-          <Badge className={`${getStatusColor(post.status)} backdrop-blur-md font-semibold`}>
-            {post.status.toUpperCase()}
-          </Badge>
-        </div>
-
-        {/* Title Overlay - Bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">
-            {post.title}
-          </h3>
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="p-4 space-y-4">
-        {/* Description */}
-        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-          {post.description}
-        </p>
-
-        {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-              <Utensils className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">Quantity</span>
-              <span className="font-medium text-foreground">{post.quantity}</span>
-            </div>
+          {/* Status Badge - Top Right */}
+          <div className="absolute top-3 right-3 z-10">
+            <Badge className={`${getStatusColor(post.status)} font-semibold text-xs px-2 py-1`}>
+              {post.status.toUpperCase()}
+            </Badge>
           </div>
 
-          <div className="flex items-center gap-2 text-sm">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-tertiary/10">
-              <Clock className="h-4 w-4 text-tertiary" />
+          {/* Image Navigation - Only show if multiple images and hovered */}
+          {images.length > 1 && isHovered && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 backdrop-blur-sm transition-all z-20"
+                aria-label="Previous image"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <button
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 backdrop-blur-sm transition-all z-20"
+                aria-label="Next image"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </>
+          )}
+
+          {/* Title - Always visible at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+            <h3 className="text-lg font-bold text-white drop-shadow-2xl line-clamp-2">
+              {post.title}
+            </h3>
+          </div>
+        </div>
+
+        {/* Expanded Details Section - Slides in on hover */}
+        <div className={`
+          bg-gradient-to-b from-zinc-900 to-black
+          transition-all duration-300 ease-out overflow-hidden
+          ${isHovered ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
+        `}>
+          <div className="p-4 space-y-3">
+            {/* Description */}
+            <p className="text-sm text-gray-300 line-clamp-2 leading-relaxed">
+              {post.description}
+            </p>
+
+            {/* Quick Info Row */}
+            <div className="flex items-center gap-4 text-xs text-gray-400">
+              <div className="flex items-center gap-1.5">
+                <Utensils className="h-3.5 w-3.5 text-emerald-400" />
+                <span>{post.quantity}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-amber-400" />
+                <span className={getTimeRemaining(post.expiryDate).includes("Expired") ? "text-red-400" : ""}>
+                  {getTimeRemaining(post.expiryDate)}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">Expires</span>
-              <span className={`font-medium ${getTimeRemaining(post.expiryDate).includes("Expired") ? "text-destructive" : "text-foreground"}`}>
-                {getTimeRemaining(post.expiryDate)}
+
+            {/* Location */}
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <div className="flex items-center gap-2 text-gray-300">
+                <MapPin className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                <span className="text-xs truncate">{post.location}</span>
+              </div>
+              <button
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsMapOpen(true)
+                }}
+              >
+                Map
+              </button>
+            </div>
+
+            {/* Posted By */}
+            <div className="flex items-center gap-2 text-xs text-gray-400 pt-2 border-t border-gray-800">
+              <User className="h-3 w-3" />
+              <span>
+                by <span className="text-gray-300 font-medium">{post.ownerName}</span>
               </span>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2">
+              {post.isOwner ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20 h-8 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/food/${post.id}`)
+                  }}
+                >
+                  <Play className="h-3 w-3 mr-1" />
+                  View Details
+                </Button>
+              ) : post.status === "available" ? (
+                <Button
+                  size="sm"
+                  className="flex-1 bg-white hover:bg-gray-200 text-black h-8 text-xs font-semibold"
+                  onClick={handleRequest}
+                  disabled={isRequesting}
+                >
+                  {isRequesting ? "Requesting..." : "Request Food"}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 bg-gray-800 text-gray-400 border-gray-700 h-8 text-xs"
+                  disabled
+                >
+                  {post.status === "taken" ? "Not Available" : "Requested"}
+                </Button>
+              )}
+            </div>
+
+            {/* Dot Indicators - Show if multiple images */}
+            {images.length > 1 && (
+              <div className="flex justify-center gap-1 pt-2">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setCurrentImageIndex(index)
+                    }}
+                    className={`h-1 rounded-full transition-all ${index === currentImageIndex
+                        ? 'bg-white w-6'
+                        : 'bg-gray-600 w-1 hover:bg-gray-500'
+                      }`}
+                    aria-label={`Go to image ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* Location */}
-        <div className="flex items-center justify-between gap-2 text-sm p-3 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-secondary flex-shrink-0" />
-            <span className="font-medium text-foreground">{post.location}</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs hover:bg-secondary/20 hover:text-secondary"
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsMapOpen(true)
-            }}
-          >
-            View Map
-          </Button>
-        </div>
-
-        {/* Map Modal */}
-        <MapModal
-          isOpen={isMapOpen}
-          onClose={() => setIsMapOpen(false)}
-          location={post.location}
-          title={post.title}
-        />
-
-        {/* Posted By */}
-        <div className="flex items-center gap-2 text-sm pt-2 border-t border-border/50">
-          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20">
-            <User className="h-3 w-3 text-primary" />
-          </div>
-          <span className="text-muted-foreground">
-            Posted by <span className="font-medium text-foreground">{post.ownerName}</span>
-          </span>
-        </div>
-
-        {/* Action Button */}
-        <div className="pt-2">
-          {post.isOwner ? (
-            <Button
-              variant="outline"
-              className="w-full bg-transparent hover:bg-primary/5"
-              onClick={() => router.push(`/food/${post.id}`)}
-            >
-              View Details
-            </Button>
-          ) : post.status === "available" ? (
-            <Button
-              className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all duration-300"
-              onClick={handleRequest}
-              disabled={isRequesting}
-            >
-              {isRequesting ? "Requesting..." : "Request Food"}
-            </Button>
-          ) : (
-            <Button variant="outline" className="w-full bg-transparent" disabled>
-              {post.status === "taken" ? "No Longer Available" : "Already Requested"}
-            </Button>
-          )}
         </div>
       </div>
-    </Card>
+
+      {/* Map Modal */}
+      <MapModal
+        isOpen={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+        location={post.location}
+        title={post.title}
+      />
+    </div>
   )
 }
