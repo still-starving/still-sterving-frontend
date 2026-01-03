@@ -74,7 +74,7 @@ export default function MyRequestsPage() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : requests.length === 0 ? (
+          ) : (requests ?? []).length === 0 ? (
             <Card className="border-border/50">
               <CardContent className="p-12 text-center">
                 <p className="text-lg text-muted-foreground mb-2">You haven't requested any food yet.</p>
@@ -83,7 +83,7 @@ export default function MyRequestsPage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {requests.map((request) => (
+              {(requests ?? []).map((request) => (
                 <Card key={request.id} className="border-border/50 hover:border-primary/30 transition-colors">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
