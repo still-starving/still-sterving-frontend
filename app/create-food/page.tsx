@@ -29,6 +29,8 @@ export default function CreateFoodPage() {
     expiryDate: "",
     expiryTime: "",
   })
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const validateForm = () => {
@@ -46,6 +48,31 @@ export default function CreateFoodPage() {
     return Object.keys(newErrors).length === 0
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 5) {
+      toast({
+        variant: "destructive",
+        title: "Too many images",
+        description: "You can upload a maximum of 5 images.",
+      })
+      return
+    }
+
+    setSelectedFiles(files)
+
+    // Generate previews
+    const previews = files.map(file => URL.createObjectURL(file))
+    setImagePreviews(previews)
+  }
+
+  const removeImage = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index)
+    const newPreviews = imagePreviews.filter((_, i) => i !== index)
+    setSelectedFiles(newFiles)
+    setImagePreviews(newPreviews)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -55,13 +82,21 @@ export default function CreateFoodPage() {
 
     try {
       const expiryDateTime = new Date(`${formData.expiryDate}T${formData.expiryTime}`)
-      await api.createFoodPost({
-        title: formData.title,
-        description: formData.description,
-        quantity: formData.quantity,
-        location: formData.location,
-        expiryDate: expiryDateTime.toISOString(),
+
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('title', formData.title)
+      formDataToSend.append('description', formData.description)
+      formDataToSend.append('quantity', formData.quantity)
+      formDataToSend.append('location', formData.location)
+      formDataToSend.append('expiryDate', expiryDateTime.toISOString())
+
+      // Append all image files
+      selectedFiles.forEach(file => {
+        formDataToSend.append('images', file)
       })
+
+      await api.createFoodPost(formDataToSend)
 
       toast({
         title: "Food posted!",
@@ -166,6 +201,45 @@ export default function CreateFoodPage() {
                     disabled={isLoading}
                   />
                   {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="images">
+                    Images <span className="text-muted-foreground text-xs">(Optional, max 5)</span>
+                  </Label>
+                  <Input
+                    id="images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileChange}
+                    disabled={isLoading}
+                    className="cursor-pointer"
+                  />
+                  {imagePreviews.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                            disabled={isLoading}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

@@ -21,7 +21,7 @@ interface FoodCardProps {
     expiryDate: string
     status: "available" | "requested" | "taken"
     ownerName: string
-    imageUrl?: string
+    imageUrls?: string[]
     isOwner?: boolean
   }
   onUpdate?: () => void
@@ -84,15 +84,17 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
     }
   }
 
-  // Generate a placeholder image based on food title
-  const placeholderImage = post.imageUrl || `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80`
+  // Use first image from array or fallback to placeholder
+  const displayImage = (post.imageUrls && post.imageUrls.length > 0)
+    ? post.imageUrls[0]
+    : `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80`
 
   return (
     <Card className="group overflow-hidden border-border/40 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 bg-card/50 backdrop-blur-sm">
       {/* Image Section */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20">
         <Image
-          src={placeholderImage}
+          src={displayImage}
           alt={post.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"

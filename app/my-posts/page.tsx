@@ -20,6 +20,7 @@ interface FoodPost {
   expiryDate: string
   location: string
   requestCount: number
+  imageUrls?: string[]
 }
 
 interface HungerBroadcast {
@@ -122,7 +123,7 @@ export default function MyPostsPage() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : foodPosts.length === 0 ? (
+              ) : (foodPosts ?? []).length === 0 ? (
                 <Card className="border-border/50">
                   <CardContent className="p-12 text-center">
                     <p className="text-lg text-muted-foreground mb-2">You haven't posted any food yet.</p>
@@ -131,7 +132,7 @@ export default function MyPostsPage() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {foodPosts.map((post) => (
+                  {(foodPosts ?? []).map((post) => (
                     <Card key={post.id} className="border-border/50 hover:border-primary/30 transition-colors">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">
@@ -174,7 +175,7 @@ export default function MyPostsPage() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : hungerBroadcasts.length === 0 ? (
+              ) : (hungerBroadcasts ?? []).length === 0 ? (
                 <Card className="border-border/50">
                   <CardContent className="p-12 text-center">
                     <p className="text-lg text-muted-foreground mb-2">You haven't broadcast hunger yet.</p>
@@ -183,7 +184,7 @@ export default function MyPostsPage() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {hungerBroadcasts.map((broadcast) => (
+                  {(hungerBroadcasts ?? []).map((broadcast) => (
                     <Card key={broadcast.id} className="border-border/50">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">

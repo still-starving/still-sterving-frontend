@@ -22,7 +22,7 @@ type FoodFeedItem = {
   expiryDate: string
   status: "available" | "requested" | "taken"
   ownerName: string
-  imageUrl?: string
+  imageUrls?: string[]
   isOwner?: boolean
 }
 

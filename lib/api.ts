@@ -33,8 +33,12 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Pr
   const { requiresAuth = true, ...fetchOptions } = options
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(fetchOptions.headers as Record<string, string>),
+  }
+
+  // Only set Content-Type if not already set and body is not FormData
+  if (!headers["Content-Type"] && !(fetchOptions.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json"
   }
 
   if (requiresAuth) {
@@ -173,11 +177,14 @@ export const api = {
   getFeed: (type?: "all" | "food" | "hunger") => apiRequest(`/feed${type ? `?type=${type}` : ""}`),
 
   // Food Posts
-  createFoodPost: (data: any) =>
-    apiRequest("/food-posts", {
+  createFoodPost: (data: any) => {
+    const isFormData = data instanceof FormData
+    return apiRequest("/food-posts", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: isFormData ? data : JSON.stringify(data),
+      headers: isFormData ? {} : { "Content-Type": "application/json" },
+    })
+  },
 
   getFoodPosts: () => apiRequest("/food-posts"),
 

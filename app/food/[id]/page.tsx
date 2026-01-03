@@ -25,6 +25,7 @@ interface FoodPost {
   ownerName: string
   ownerJoinDate: string
   isOwner: boolean
+  imageUrls?: string[]
 }
 
 interface Request {
@@ -205,6 +206,26 @@ export default function FoodDetailPage() {
                 <p className="text-base leading-relaxed">{post.description}</p>
               </div>
 
+              {post.imageUrls && post.imageUrls.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Images</h3>
+                    <div className={`grid gap-3 ${post.imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                      {post.imageUrls.map((url, index) => (
+                        <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                          <img
+                            src={url}
+                            alt={`${post.title} - Image ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
               <Separator />
 
               <div className="grid gap-4">
@@ -246,13 +267,13 @@ export default function FoodDetailPage() {
                 </div>
               </div>
 
-              {post.isOwner && requests.length > 0 && (
+              {post.isOwner && (requests ?? []).length > 0 && (
                 <>
                   <Separator />
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Requests ({requests.length})</h3>
+                    <h3 className="text-lg font-semibold mb-4">Requests ({(requests ?? []).length})</h3>
                     <div className="space-y-3">
-                      {requests.map((request) => (
+                      {(requests ?? []).map((request) => (
                         <Card key={request.id} className="bg-muted/50 border-border/50">
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
