@@ -218,6 +218,9 @@ export default function FoodDetailPage() {
                             src={url}
                             alt={`${post.title} - Image ${index + 1}`}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80'
+                            }}
                           />
                         </div>
                       ))}

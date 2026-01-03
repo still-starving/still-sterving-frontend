@@ -16,6 +16,13 @@ import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
 import { Loader2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import imageCompression from "browser-image-compression"
+
+// Image upload constraints
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB per image
+const MAX_TOTAL_SIZE = 15 * 1024 * 1024 // 15MB total
+const MAX_IMAGES = 5
+const ALLOWED_FORMATS = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 
 export default function CreateFoodPage() {
   const router = useRouter()
@@ -31,6 +38,7 @@ export default function CreateFoodPage() {
   })
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [isCompressing, setIsCompressing] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const validateForm = () => {
@@ -48,22 +56,93 @@ export default function CreateFoodPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (files.length > 5) {
+
+    // Check number of files
+    if (files.length > MAX_IMAGES) {
       toast({
         variant: "destructive",
         title: "Too many images",
-        description: "You can upload a maximum of 5 images.",
+        description: `You can upload a maximum of ${MAX_IMAGES} images.`,
       })
       return
     }
 
-    setSelectedFiles(files)
+    // Validate file formats
+    const invalidFiles = files.filter(f => !ALLOWED_FORMATS.includes(f.type))
+    if (invalidFiles.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file format",
+        description: "Only JPEG, PNG, and WebP images are allowed.",
+      })
+      return
+    }
 
-    // Generate previews
-    const previews = files.map(file => URL.createObjectURL(file))
-    setImagePreviews(previews)
+    // Check individual file sizes
+    const oversizedFiles = files.filter(f => f.size > MAX_FILE_SIZE)
+    if (oversizedFiles.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: `Each image must be less than ${MAX_FILE_SIZE / 1024 / 1024}MB. Please compress or resize your images.`,
+      })
+      return
+    }
+
+    // Check total size
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0)
+    if (totalSize > MAX_TOTAL_SIZE) {
+      toast({
+        variant: "destructive",
+        title: "Total size too large",
+        description: `Total size must be less than ${MAX_TOTAL_SIZE / 1024 / 1024}MB. Current: ${(totalSize / 1024 / 1024).toFixed(1)}MB`,
+      })
+      return
+    }
+
+    // Compress images
+    setIsCompressing(true)
+    try {
+      const compressionOptions = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        fileType: 'image/jpeg' as const,
+      }
+
+      const compressedFiles = await Promise.all(
+        files.map(async (file) => {
+          try {
+            const compressed = await imageCompression(file, compressionOptions)
+            return new File([compressed], file.name, { type: 'image/jpeg' })
+          } catch (error) {
+            console.error('Compression failed for', file.name, error)
+            return file // Return original if compression fails
+          }
+        })
+      )
+
+      setSelectedFiles(compressedFiles)
+
+      // Generate previews
+      const previews = compressedFiles.map(file => URL.createObjectURL(file))
+      setImagePreviews(previews)
+
+      toast({
+        title: "Images ready",
+        description: `${compressedFiles.length} image(s) compressed and ready to upload.`,
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Compression failed",
+        description: "Failed to process images. Please try again.",
+      })
+    } finally {
+      setIsCompressing(false)
+    }
   }
 
   const removeImage = (index: number) => {
@@ -205,17 +284,23 @@ export default function CreateFoodPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="images">
-                    Images <span className="text-muted-foreground text-xs">(Optional, max 5)</span>
+                    Images <span className="text-muted-foreground text-xs">(Optional, max 5 • JPEG, PNG, WebP)</span>
                   </Label>
                   <Input
                     id="images"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     multiple
                     onChange={handleFileChange}
-                    disabled={isLoading}
+                    disabled={isLoading || isCompressing}
                     className="cursor-pointer"
                   />
+                  {isCompressing && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Compressing images...</span>
+                    </div>
+                  )}
                   {imagePreviews.length > 0 && (
                     <div className="grid grid-cols-3 gap-2 mt-3">
                       {imagePreviews.map((preview, index) => (

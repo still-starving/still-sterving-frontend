@@ -33,6 +33,7 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
   const [isRequesting, setIsRequesting] = useState(false)
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imageError, setImageError] = useState(false)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -111,11 +112,12 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
       {/* Image Section with Carousel */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20">
         <Image
-          src={images[currentImageIndex]}
+          src={imageError ? `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&q=80` : images[currentImageIndex]}
           alt={post.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          onError={() => setImageError(true)}
         />
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
