@@ -66,8 +66,8 @@ export default function FeedPage() {
     fetchFeed()
   }, [])
 
-  const foodItems = allFeed.filter((item) => item.type === "food") as FoodFeedItem[]
-  const hungerItems = allFeed.filter((item) => item.type === "hunger") as HungerFeedItem[]
+  const foodItems = (allFeed ?? []).filter((item) => item.type === "food") as FoodFeedItem[]
+  const hungerItems = (allFeed ?? []).filter((item) => item.type === "hunger") as HungerFeedItem[]
 
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: "left" | "right") => {
     if (ref.current) {
