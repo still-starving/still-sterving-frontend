@@ -23,7 +23,8 @@ export function TopNav() {
 
   const navLinks = [
     { href: "/feed", label: "Home" },
-    { href: "/create-food", label: "Create Post" },
+    { href: "/create-food", label: "Share Food" },
+    { href: "/create-hunger", label: "Broadcast Hunger" },
     { href: "/my-requests", label: "My Requests" },
     { href: "/my-posts", label: "My Posts" },
   ]
