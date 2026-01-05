@@ -48,6 +48,10 @@ export type WSMessageType =
     | 'typing'
     | 'read'
     | 'error'
+    | 'food_post'
+    | 'hunger_broadcast'
+    | 'request_created'
+    | 'request_updated'
 
 export interface WSBaseMessage {
     type: WSMessageType
@@ -85,6 +89,67 @@ export interface WSErrorMessage extends WSBaseMessage {
     error: string
 }
 
+// Feed broadcast types
+export interface FoodFeedItem {
+    type: 'food'
+    id: string
+    title: string
+    description: string
+    quantity: string
+    location: string
+    expiryDate: string
+    status: 'available' | 'requested' | 'taken'
+    ownerName: string
+    ownerId: string
+    imageUrls?: string[]
+    isOwner?: boolean
+}
+
+export interface HungerFeedItem {
+    type: 'hunger'
+    id: string
+    message: string
+    location: string
+    urgency: 'normal' | 'urgent'
+    userName: string
+    ownerId: string
+    timePosted: string
+    isOwner?: boolean
+}
+
+export interface WSFoodPostMessage extends WSBaseMessage {
+    type: 'food_post'
+    foodPost: FoodFeedItem
+}
+
+export interface WSHungerBroadcastMessage extends WSBaseMessage {
+    type: 'hunger_broadcast'
+    hungerBroadcast: HungerFeedItem
+}
+
+// Request notification types
+export interface FoodRequest {
+    id: string
+    foodPostId: string
+    userId: string
+    userName?: string
+    foodTitle?: string
+    status: 'pending' | 'accepted' | 'rejected'
+    requestDate: string
+    conversationId?: string
+}
+
+export interface WSRequestCreatedMessage extends WSBaseMessage {
+    type: 'request_created'
+    foodRequest: FoodRequest
+}
+
+export interface WSRequestUpdatedMessage extends WSBaseMessage {
+    type: 'request_updated'
+    conversationId?: string  // At root level for accepted requests
+    foodRequest: FoodRequest
+}
+
 export type WSMessage =
     | WSConnectedMessage
     | WSChatMessageSend
@@ -92,3 +157,7 @@ export type WSMessage =
     | WSTypingMessage
     | WSReadMessage
     | WSErrorMessage
+    | WSFoodPostMessage
+    | WSHungerBroadcastMessage
+    | WSRequestCreatedMessage
+    | WSRequestUpdatedMessage

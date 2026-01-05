@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { TopNav } from "@/components/layout/top-nav"
 import { BottomNav } from "@/components/layout/bottom-nav"
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
 import { Loader2, ArrowLeft, MapPin, Clock, Utensils, User, Trash2, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
+import { useWebSocket } from "@/hooks/use-websocket"
 
 interface FoodPost {
   id: string
@@ -40,6 +41,7 @@ export default function FoodDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const { lastMessage } = useWebSocket()
   const [post, setPost] = useState<FoodPost | null>(null)
   const [requests, setRequests] = useState<Request[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -48,11 +50,16 @@ export default function FoodDetailPage() {
   const fetchData = async () => {
     try {
       const postData = (await api.getFoodPost(params.id as string)) as FoodPost
+      console.log('📦 Food post data:', postData)
       setPost(postData)
 
       if (postData.isOwner) {
         const requestsData = (await api.getFoodRequests(params.id as string)) as Request[]
+        console.log('📋 Requests data:', requestsData)
+        console.log('Is owner:', postData.isOwner, 'Requests count:', requestsData.length)
         setRequests(requestsData)
+      } else {
+        console.log('❌ Not owner, skipping requests fetch')
       }
     } catch (error) {
       toast({
@@ -69,6 +76,35 @@ export default function FoodDetailPage() {
   useEffect(() => {
     fetchData()
   }, [params.id])
+
+  // Listen for new request notifications (for food owners)
+  useEffect(() => {
+    if (!lastMessage || !post) return
+
+    console.log('🔔 Food detail page received message:', lastMessage.type, lastMessage)
+
+    if (lastMessage.type === "request_created" && "foodRequest" in lastMessage) {
+      const { foodRequest } = lastMessage
+      console.log('✅ Request created event:', foodRequest)
+      console.log('Current post ID:', params.id, 'Request post ID:', foodRequest.foodPostId, 'Is owner:', post.isOwner)
+
+      // Only show notification if this is for the current post
+      if (foodRequest.foodPostId === params.id && post.isOwner) {
+        console.log('🎉 Showing notification for owner!')
+        toast({
+          title: "New request!",
+          description: `${foodRequest.userName || "Someone"} wants your ${post.title}!`,
+        })
+        // Refresh requests list
+        fetchData()
+      } else {
+        console.log('❌ Not showing notification:', {
+          postMatch: foodRequest.foodPostId === params.id,
+          isOwner: post.isOwner
+        })
+      }
+    }
+  }, [lastMessage, post, params.id])
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this food post?")) return
@@ -95,12 +131,25 @@ export default function FoodDetailPage() {
   const handleAcceptRequest = async (requestId: string) => {
     setActionLoading(requestId)
     try {
-      await api.acceptRequest(params.id as string, requestId)
-      toast({
-        title: "Request accepted",
-        description: "The requester will be notified.",
-      })
-      fetchData()
+      const response = await api.acceptRequest(params.id as string, requestId) as any
+
+      // Extract conversationId from response
+      const conversationId = response?.conversationId || response?.conversation?.id
+
+      if (conversationId) {
+        toast({
+          title: "Request accepted",
+          description: "Opening chat to coordinate pickup...",
+        })
+        // Navigate to the conversation
+        router.push(`/messages/${conversationId}`)
+      } else {
+        toast({
+          title: "Request accepted",
+          description: "The requester will be notified.",
+        })
+        fetchData()
+      }
     } catch (error) {
       toast({
         variant: "destructive",

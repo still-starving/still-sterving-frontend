@@ -43,18 +43,26 @@ export default function MyPostsPage() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const [foodData, hungerData] = await Promise.all([
-        api.getMyPosts(),
-        api.getMyHungerBroadcasts(),
-      ])
+      const response = await api.getMyPosts() as any
 
-      // Ensure we always have arrays, even if API returns an object or null
-      const foodArray = Array.isArray(foodData) ? foodData : []
-      const hungerArray = Array.isArray(hungerData) ? hungerData : []
+      console.log('📦 My Posts - Response:', response)
+
+      // Backend returns an object with foodPosts and hungerBroadcasts
+      const foodArray = Array.isArray(response?.foodPosts) ? response.foodPosts : []
+      const hungerArray = Array.isArray(response?.hungerBroadcasts) ? response.hungerBroadcasts : []
+
+      console.log('📊 Food array length:', foodArray.length)
+      console.log('📊 Hunger array length:', hungerArray.length)
+
+      // Log request counts for each post
+      foodArray.forEach((post: any, index: number) => {
+        console.log(`Post ${index + 1}: "${post.title}" - requestCount:`, post.requestCount)
+      })
 
       setFoodPosts(foodArray)
       setHungerBroadcasts(hungerArray)
     } catch (error) {
+      console.error('❌ Error loading posts:', error)
       toast({
         variant: "destructive",
         title: "Failed to load posts",
@@ -141,11 +149,25 @@ export default function MyPostsPage() {
               ) : (
                 <div className="space-y-4">
                   {(foodPosts ?? []).map((post) => (
-                    <Card key={post.id} className="border-border/50 hover:border-primary/30 transition-colors">
+                    <Card
+                      key={post.id}
+                      className={
+                        post.requestCount > 0
+                          ? "border-orange-500/50 hover:border-orange-500 transition-colors bg-orange-500/5"
+                          : "border-border/50 hover:border-primary/30 transition-colors"
+                      }
+                    >
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="text-lg font-semibold flex-1 text-balance">{post.title}</h3>
-                          <Badge className={getStatusColor(post.status)}>{post.status.toUpperCase()}</Badge>
+                          <div className="flex gap-2">
+                            {post.requestCount > 0 && (
+                              <Badge className="bg-orange-500 text-white animate-pulse">
+                                {post.requestCount} {post.requestCount === 1 ? 'Request' : 'Requests'}
+                              </Badge>
+                            )}
+                            <Badge className={getStatusColor(post.status)}>{post.status.toUpperCase()}</Badge>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 text-sm">

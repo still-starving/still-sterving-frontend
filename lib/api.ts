@@ -418,6 +418,13 @@ export const api = {
     }),
 
   getUnreadCount: () => apiRequest("/messages/unread-count"),
+
+  // Request count
+  getPendingRequestsCount: () => apiRequest("/my-food-requests/pending-count"),
+
+  // My Requests unviewed count
+  getMyRequestsUnviewedCount: () => apiRequest("/my-requests/unviewed-count"),
+  markMyRequestsAsViewed: () => apiRequest("/my-requests/mark-viewed", { method: "PUT" }),
 }
 
 // Export auth helpers for use in components

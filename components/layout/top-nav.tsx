@@ -20,6 +20,8 @@ import { useWebSocket } from "@/hooks/use-websocket"
 export function TopNav() {
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [pendingRequestCount, setPendingRequestCount] = useState(0)
+  const [myRequestsUnviewedCount, setMyRequestsUnviewedCount] = useState(0)
   const { lastMessage } = useWebSocket()
 
   const handleLogout = async () => {
@@ -57,6 +59,81 @@ export function TopNav() {
     }
   }, [lastMessage])
 
+  // Fetch pending request count on mount
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const data = await api.getPendingRequestsCount()
+        setPendingRequestCount((data as any).count || 0)
+      } catch (error) {
+        // Silently fail if endpoint not ready
+        setPendingRequestCount(0)
+      }
+    }
+    fetchPendingCount()
+  }, [])
+
+  // Update pending request count when WebSocket events arrive
+  useEffect(() => {
+    if (!lastMessage) return
+
+    if (lastMessage.type === "request_created") {
+      // Increment count when new request is created
+      setPendingRequestCount(prev => prev + 1)
+    } else if (lastMessage.type === "request_updated") {
+      // Decrement count when request is accepted/rejected
+      setPendingRequestCount(prev => Math.max(0, prev - 1))
+    }
+  }, [lastMessage])
+
+  // Refresh pending count when navigating to My Posts page
+  useEffect(() => {
+    console.log('📍 Pathname changed to:', pathname)
+    if (pathname === '/my-posts') {
+      console.log('🔄 Refreshing pending count...')
+      const fetchPendingCount = async () => {
+        try {
+          const data = await api.getPendingRequestsCount()
+          console.log('📊 New pending count:', (data as any).count)
+          setPendingRequestCount((data as any).count || 0)
+        } catch (error) {
+          console.error('❌ Failed to refresh pending count:', error)
+        }
+      }
+      fetchPendingCount()
+    }
+  }, [pathname])
+
+  // Fetch My Requests unviewed count on mount
+  useEffect(() => {
+    const fetchUnviewedCount = async () => {
+      try {
+        const data = await api.getMyRequestsUnviewedCount()
+        setMyRequestsUnviewedCount((data as any).count || 0)
+      } catch (error) {
+        setMyRequestsUnviewedCount(0)
+      }
+    }
+    fetchUnviewedCount()
+  }, [])
+
+  // Update My Requests unviewed count when request status changes
+  useEffect(() => {
+    if (!lastMessage) return
+
+    if (lastMessage.type === "request_updated") {
+      // Increment count when request is updated (accepted/rejected)
+      setMyRequestsUnviewedCount(prev => prev + 1)
+    }
+  }, [lastMessage])
+
+  // Reset My Requests unviewed count when visiting My Requests page
+  useEffect(() => {
+    if (pathname === '/my-requests' && myRequestsUnviewedCount > 0) {
+      setMyRequestsUnviewedCount(0)
+    }
+  }, [pathname, myRequestsUnviewedCount])
+
   const navLinks = [
     { href: "/feed", label: "Home" },
     { href: "/create-food", label: "Share Food" },
@@ -84,11 +161,21 @@ export function TopNav() {
                 variant={pathname === link.href ? "default" : "ghost"}
                 className={
                   pathname === link.href
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90 glow-hover"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 glow-hover relative"
+                    : "text-muted-foreground hover:text-foreground relative"
                 }
               >
                 {link.label}
+                {link.href === "/my-posts" && pendingRequestCount > 0 && (
+                  <Badge className="ml-2 bg-destructive text-destructive-foreground px-1.5 py-0 text-xs min-w-[20px] h-5">
+                    {pendingRequestCount > 99 ? "99+" : pendingRequestCount}
+                  </Badge>
+                )}
+                {link.href === "/my-requests" && myRequestsUnviewedCount > 0 && (
+                  <Badge className="ml-2 bg-destructive text-destructive-foreground px-1.5 py-0 text-xs min-w-[20px] h-5">
+                    {myRequestsUnviewedCount > 99 ? "99+" : myRequestsUnviewedCount}
+                  </Badge>
+                )}
               </Button>
             </Link>
           ))}

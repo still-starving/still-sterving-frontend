@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { TopNav } from "@/components/layout/top-nav"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { AuthGuard } from "@/components/layout/auth-guard"
@@ -11,38 +11,14 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRef } from "react"
-
-type FoodFeedItem = {
-  type: "food"
-  id: string
-  title: string
-  description: string
-  quantity: string
-  location: string
-  expiryDate: string
-  status: "available" | "requested" | "taken"
-  ownerName: string
-  ownerId: string
-  imageUrls?: string[]
-  isOwner?: boolean
-}
-
-type HungerFeedItem = {
-  type: "hunger"
-  id: string
-  message: string
-  location: string
-  urgency: "normal" | "urgent"
-  userName: string
-  ownerId: string
-  timePosted: string
-  isOwner?: boolean
-}
+import { useWebSocket } from "@/hooks/use-websocket"
+import type { FoodFeedItem, HungerFeedItem } from "@/types/messaging"
 
 type FeedItem = FoodFeedItem | HungerFeedItem
 
 export default function FeedPage() {
   const { toast } = useToast()
+  const { lastMessage } = useWebSocket()
   const [allFeed, setAllFeed] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const availableFoodScrollRef = useRef<HTMLDivElement>(null)
@@ -65,9 +41,33 @@ export default function FeedPage() {
     }
   }
 
+  // Handle real-time WebSocket feed updates
+  const handleFeedBroadcast = useCallback((newItem: FeedItem) => {
+    setAllFeed((currentFeed) => {
+      // Check if item already exists to avoid duplicates
+      const exists = currentFeed.some((item) => item.id === newItem.id)
+      if (exists) {
+        return currentFeed
+      }
+      // Prepend new item to the top of the feed
+      return [newItem, ...currentFeed]
+    })
+  }, [])
+
   useEffect(() => {
     fetchFeed()
   }, [])
+
+  // Listen for WebSocket broadcast messages
+  useEffect(() => {
+    if (!lastMessage) return
+
+    if (lastMessage.type === "food_post" && "foodPost" in lastMessage) {
+      handleFeedBroadcast(lastMessage.foodPost)
+    } else if (lastMessage.type === "hunger_broadcast" && "hungerBroadcast" in lastMessage) {
+      handleFeedBroadcast(lastMessage.hungerBroadcast)
+    }
+  }, [lastMessage, handleFeedBroadcast])
 
   // Separate food items into available and expired
   const allFoodItems = (allFeed ?? []).filter((item) => item.type === "food") as FoodFeedItem[]
