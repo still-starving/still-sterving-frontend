@@ -34,10 +34,13 @@ export function HungerCard({ post }: HungerCardProps) {
   const handleMessage = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      // In a real app, we might want to pass a hungerBroadcastId or similar context
-      // For now, we'll create a conversation with the user directly (foodPostId is optional)
+      // Record the offer on the backend
+      await api.offerFood(post.id)
+
+      // Start the conversation linked to this broadcast
       const conversation = await api.createConversation({
         otherParticipantId: post.ownerId,
+        hungerBroadcastId: post.id,
       })
       router.push(`/messages/${(conversation as any).id}`)
     } catch (error) {
@@ -178,7 +181,7 @@ export function HungerCard({ post }: HungerCardProps) {
                     onClick={handleMessage}
                   >
                     <MessageCircle className="h-3 w-3 mr-1" />
-                    Message
+                    Offer Help
                   </Button>
 
                 </>

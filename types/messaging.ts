@@ -11,10 +11,13 @@ export interface Conversation {
     // Extended fields from GET /conversations
     foodPostTitle?: string
     foodPostImageUrl?: string
+    hungerBroadcastId?: string | null
+    hungerBroadcastTitle?: string
     otherParticipantId?: string
     otherParticipantName?: string
     lastMessageContent?: string
     unreadCount?: number
+    status?: 'active' | 'resolved' | 'expired'
 }
 
 export interface Message {
@@ -31,6 +34,7 @@ export interface Message {
 
 export interface CreateConversationRequest {
     foodPostId?: string
+    hungerBroadcastId?: string
     otherParticipantId: string
 }
 
@@ -41,6 +45,17 @@ export interface GetMessagesParams {
 
 export interface UnreadCountResponse {
     unreadCount: number
+}
+
+export interface Notification {
+    id: string
+    userId: string
+    title: string
+    message: string
+    type: string
+    referenceId?: string
+    isRead: boolean
+    createdAt: string
 }
 
 // WebSocket message types
@@ -54,6 +69,8 @@ export type WSMessageType =
     | 'hunger_broadcast'
     | 'request_created'
     | 'request_updated'
+    | 'notification'
+    | 'hunger_broadcast_expired'
 
 export interface WSBaseMessage {
     type: WSMessageType
@@ -155,6 +172,16 @@ export interface WSRequestUpdatedMessage extends WSBaseMessage {
     foodRequest: FoodRequest
 }
 
+export interface WSNotificationMessage extends WSBaseMessage {
+    type: 'notification'
+    notification: Notification
+}
+
+export interface WSHungerBroadcastExpiredMessage extends WSBaseMessage {
+    type: 'hunger_broadcast_expired'
+    content: string // broadcast_uuid
+}
+
 export type WSMessage =
     | WSConnectedMessage
     | WSChatMessageSend
@@ -166,3 +193,5 @@ export type WSMessage =
     | WSHungerBroadcastMessage
     | WSRequestCreatedMessage
     | WSRequestUpdatedMessage
+    | WSNotificationMessage
+    | WSHungerBroadcastExpiredMessage

@@ -25,6 +25,8 @@ export default function ConversationPage() {
     const [messages, setMessages] = useState<Message[]>([])
     const [conversation, setConversation] = useState<Conversation | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [resolveLoading, setResolveLoading] = useState(false)
+    const [isHungerOwner, setIsHungerOwner] = useState(false)
     const [isTyping, setIsTyping] = useState(false)
     const [currentUserId, setCurrentUserId] = useState<string>("")
 
@@ -64,6 +66,18 @@ export default function ConversationPage() {
                 // Set messages (reverse to show oldest first)
                 const messagesArray = Array.isArray(messagesData) ? messagesData : []
                 setMessages(messagesArray.reverse())
+
+                // Check hunger broadcast ownership
+                if (conv?.hungerBroadcastId) {
+                    try {
+                        const broadcast = await api.getHungerBroadcast(conv.hungerBroadcastId)
+                        const user = await api.getMe()
+                        const userId = (user as any).id
+                        setIsHungerOwner((broadcast as any).ownerId === userId)
+                    } catch (e) {
+                        console.error("Failed to check hunger ownership:", e)
+                    }
+                }
 
                 // Mark messages as read
                 await api.markMessagesAsRead(conversationId)
@@ -132,6 +146,28 @@ export default function ConversationPage() {
         sendTypingIndicator(conversationId)
     }
 
+    const handleResolve = async () => {
+        if (!conversation?.hungerBroadcastId) return
+        setResolveLoading(true)
+        try {
+            await api.resolveHungerBroadcast(conversation.hungerBroadcastId)
+            toast({
+                title: "Broadcast resolved",
+                description: "Your hunger broadcast has been marked as resolved.",
+            })
+            // Optionally redirect or refresh? 
+            // The broadcast will disappear from the feed for everyone.
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Failed to resolve",
+                description: error instanceof Error ? error.message : "Something went wrong.",
+            })
+        } finally {
+            setResolveLoading(false)
+        }
+    }
+
     if (isLoading) {
         return (
             <AuthGuard>
@@ -158,7 +194,7 @@ export default function ConversationPage() {
                             </Link>
                             <div className="flex-1 min-w-0">
                                 <h2 className="font-semibold text-sm truncate">
-                                    {conversation?.foodPostTitle || "Conversation"}
+                                    {conversation?.foodPostTitle || conversation?.status === 'resolved' ? 'Resolved Broadcast' : (conversation?.hungerBroadcastTitle || "Conversation")}
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
                                     {conversation?.otherParticipantName}
@@ -167,9 +203,32 @@ export default function ConversationPage() {
                             {conversation?.foodPostId && (
                                 <Link href={`/food/${conversation.foodPostId}`}>
                                     <Button variant="outline" size="sm">
-                                        View Post
+                                        View Food
                                     </Button>
                                 </Link>
+                            )}
+                            {conversation?.hungerBroadcastId && (
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => router.push(`/feed`)}
+                                    >
+                                        View Feed
+                                    </Button>
+
+                                    {isHungerOwner && (
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="bg-primary text-primary-foreground hover:bg-primary/90 glow-hover"
+                                            onClick={handleResolve}
+                                            disabled={resolveLoading || conversation?.status === 'resolved'}
+                                        >
+                                            {resolveLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark Resolved"}
+                                        </Button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>

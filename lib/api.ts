@@ -293,6 +293,8 @@ export const api = {
 
   deleteHungerBroadcast: (id: string) => apiRequest(`/hunger-broadcasts/${id}`, { method: "DELETE" }),
 
+  resolveHungerBroadcast: (id: string) => apiRequest(`/hunger-broadcasts/${id}/resolve`, { method: "PUT" }),
+
   offerFood: (id: string) => apiRequest(`/hunger-broadcasts/${id}/offer`, { method: "POST" }),
 
   // User
@@ -339,6 +341,11 @@ export const api = {
     }),
 
   getUnreadCount: () => apiRequest("/messages/unread-count"),
+
+  // Notifications
+  getNotifications: () => apiRequest("/notifications"),
+  markNotificationAsRead: (id: string) => apiRequest(`/notifications/${id}/read`, { method: "PUT" }),
+  getUnreadNotificationsCount: () => apiRequest("/notifications/unread-count"),
 
   // Request count
   getPendingRequestsCount: () => apiRequest("/my-food-requests/pending-count"),

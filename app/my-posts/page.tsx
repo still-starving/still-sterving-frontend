@@ -39,6 +39,7 @@ export default function MyPostsPage() {
   const [hungerBroadcasts, setHungerBroadcasts] = useState<HungerBroadcast[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+  const [resolveLoading, setResolveLoading] = useState<string | null>(null)
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -102,6 +103,26 @@ export default function MyPostsPage() {
     }
   }
 
+  const handleResolveHunger = async (id: string) => {
+    setResolveLoading(id)
+    try {
+      await api.resolveHungerBroadcast(id)
+      toast({
+        title: "Broadcast resolved",
+        description: "Your hunger broadcast has been marked as resolved.",
+      })
+      fetchData()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to resolve",
+        description: error instanceof Error ? error.message : "Something went wrong.",
+      })
+    } finally {
+      setResolveLoading(null)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
@@ -111,6 +132,7 @@ export default function MyPostsPage() {
         return "bg-status-requested/20 text-status-requested border-status-requested/30"
       case "taken":
       case "expired":
+      case "resolved":
         return "bg-status-taken/20 text-status-taken border-status-taken/30"
       default:
         return ""
@@ -239,24 +261,41 @@ export default function MyPostsPage() {
                         </div>
 
                         {broadcast.status === "active" && (
-                          <Button
-                            variant="outline"
-                            className="w-full text-destructive hover:bg-destructive/10 bg-transparent"
-                            onClick={() => handleDeleteHunger(broadcast.id)}
-                            disabled={deleteLoading === broadcast.id}
-                          >
-                            {deleteLoading === broadcast.id ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Deleting...
-                              </>
-                            ) : (
-                              <>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Broadcast
-                              </>
-                            )}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 glow-hover"
+                              onClick={() => handleResolveHunger(broadcast.id)}
+                              disabled={resolveLoading === broadcast.id || deleteLoading === broadcast.id}
+                            >
+                              {resolveLoading === broadcast.id ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Resolving...
+                                </>
+                              ) : (
+                                "Mark Resolved"
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="flex-1 text-destructive hover:bg-destructive/10 bg-transparent"
+                              onClick={() => handleDeleteHunger(broadcast.id)}
+                              disabled={deleteLoading === broadcast.id || resolveLoading === broadcast.id}
+                            >
+                              {deleteLoading === broadcast.id ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         )}
                       </CardContent>
                     </Card>

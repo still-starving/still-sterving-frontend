@@ -13,16 +13,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, LogOut, MessageCircle } from "lucide-react"
+import { User, LogOut, MessageCircle, Bell } from "lucide-react"
 import { api } from "@/lib/api"
 import { useWebSocket } from "@/hooks/use-websocket"
+import { NotificationList } from "@/components/notifications/notification-list"
+import { useToast } from "@/hooks/use-toast"
 
 export function TopNav() {
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [pendingRequestCount, setPendingRequestCount] = useState(0)
   const [myRequestsUnviewedCount, setMyRequestsUnviewedCount] = useState(0)
   const { lastMessage } = useWebSocket()
+  const { toast } = useToast()
 
   const handleLogout = async () => {
     await api.logout()
@@ -41,6 +45,19 @@ export function TopNav() {
       }
     }
     fetchUnreadCount()
+  }, [])
+
+  // Fetch unread notification count on mount
+  useEffect(() => {
+    const fetchUnreadNotifications = async () => {
+      try {
+        const data = await api.getUnreadNotificationsCount()
+        setUnreadNotificationCount((data as any).count || 0)
+      } catch (error) {
+        setUnreadNotificationCount(0)
+      }
+    }
+    fetchUnreadNotifications()
   }, [])
 
   // Update unread count when new messages arrive
@@ -124,8 +141,18 @@ export function TopNav() {
     if (lastMessage.type === "request_updated") {
       // Increment count when request is updated (accepted/rejected)
       setMyRequestsUnviewedCount(prev => prev + 1)
+    } else if (lastMessage.type === "notification") {
+      // Handle real-time notification
+      const notification = (lastMessage as any).notification
+      setUnreadNotificationCount(prev => prev + 1)
+
+      // Show toast
+      toast({
+        title: notification.title,
+        description: notification.message,
+      })
     }
-  }, [lastMessage])
+  }, [lastMessage, toast])
 
   // Reset My Requests unviewed count when visiting My Requests page
   useEffect(() => {
@@ -199,6 +226,29 @@ export function TopNav() {
               )}
             </Button>
           </Link>
+
+          {/* Notifications Bell */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground relative"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotificationCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground px-1 h-4 min-w-[16px] text-[10px] flex items-center justify-center">
+                    {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[350px] p-0 overflow-hidden">
+              <NotificationList
+                onUnreadCountChange={setUnreadNotificationCount}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Profile Dropdown */}

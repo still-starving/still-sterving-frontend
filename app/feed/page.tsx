@@ -66,6 +66,9 @@ export default function FeedPage() {
       handleFeedBroadcast(lastMessage.foodPost)
     } else if (lastMessage.type === "hunger_broadcast" && "hungerBroadcast" in lastMessage) {
       handleFeedBroadcast(lastMessage.hungerBroadcast)
+    } else if (lastMessage.type === "hunger_broadcast_expired") {
+      const expiredId = (lastMessage as any).content
+      setAllFeed((currentFeed) => currentFeed.filter(item => item.id !== expiredId))
     }
   }, [lastMessage, handleFeedBroadcast])
 
