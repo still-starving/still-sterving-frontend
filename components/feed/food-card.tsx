@@ -23,6 +23,7 @@ interface FoodCardProps {
     ownerId: string
     imageUrls?: string[]
     isOwner?: boolean
+    price?: number
   }
   onUpdate?: () => void
 }
@@ -35,6 +36,9 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const isExpired = new Date(post.expiryDate) <= new Date()
+  const isTaken = post.status === "taken"
+  const isInactive = isExpired || isTaken
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -158,7 +162,11 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
 
           {/* Status Badge - Top Right */}
           <div className="absolute top-3 right-3 z-10 flex gap-2">
-            {post.price && post.price > 0 && (
+            {(!post.price || post.price === 0) ? (
+              <Badge className="bg-emerald-500 text-white font-bold text-xs px-2 py-1 shadow-lg border-none">
+                FREE
+              </Badge>
+            ) : (
               <Badge className="bg-white text-black font-bold text-xs px-2 py-1 shadow-lg border-none">
                 €{post.price}
               </Badge>
@@ -266,35 +274,41 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
                   <Play className="h-3 w-3 mr-1" />
                   View Details
                 </Button>
-              ) : post.status === "available" ? (
-                <Button
-                  size="sm"
-                  className="flex-1 bg-white hover:bg-gray-200 text-black h-9 text-xs font-semibold"
-                  onClick={handleRequest}
-                  disabled={isRequesting}
-                >
-                  {isRequesting ? "Requesting..." : "Request Food"}
-                </Button>
+              ) : !isInactive ? (
+                <>
+                  {post.status === "available" ? (
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-white hover:bg-gray-200 text-black h-9 text-xs font-semibold"
+                      onClick={handleRequest}
+                      disabled={isRequesting}
+                    >
+                      {isRequesting ? "Requesting..." : "Request Food"}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 bg-gray-800 text-gray-400 border-gray-700 h-9 text-xs"
+                      disabled
+                    >
+                      Requested
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 bg-muted/30 hover:bg-secondary/20 hover:text-secondary hover:border-secondary/50 text-white border-white/20 text-xs"
+                    onClick={handleMessage}
+                  >
+                    <MessageCircle className="h-3 w-3 mr-1" />
+                    Message
+                  </Button>
+                </>
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 bg-gray-800 text-gray-400 border-gray-700 h-9 text-xs"
-                  disabled
-                >
-                  {post.status === "taken" ? "Not Available" : "Requested"}
-                </Button>
-              )}
-              {!post.isOwner && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 h-9 bg-muted/30 hover:bg-secondary/20 hover:text-secondary hover:border-secondary/50 text-white border-white/20 text-xs"
-                  onClick={handleMessage}
-                >
-                  <MessageCircle className="h-3 w-3 mr-1" />
-                  Message
-                </Button>
+                <div className="flex-1 py-2 text-center text-xs text-muted-foreground bg-muted/10 rounded-md border border-border/20">
+                  This item is no longer available
+                </div>
               )}
             </div>
 
