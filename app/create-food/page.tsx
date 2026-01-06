@@ -14,8 +14,9 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { Loader2, ArrowLeft, Banknote, CreditCard, Wallet } from "lucide-react"
+import { Loader2, ArrowLeft, Banknote, CreditCard, Wallet, Flame, ChefHat } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { SpiceLevel } from "@/types/messaging"
 import Link from "next/link"
 import imageCompression from "browser-image-compression"
 
@@ -49,6 +50,10 @@ function CreateFoodForm() {
     location: "",
     expiryDate: "",
     expiryTime: "",
+    spiceLevel: "no_spicy" as SpiceLevel,
+    ingredients: "",
+    cookedDate: new Date().toISOString().split('T')[0],
+    cookedTime: new Date().toTimeString().slice(0, 5),
   })
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
@@ -68,6 +73,15 @@ function CreateFoodForm() {
     if (!formData.location.trim()) newErrors.location = "Pickup location is required"
     if (!formData.expiryDate) newErrors.expiryDate = "Expiry date is required"
     if (!formData.expiryTime) newErrors.expiryTime = "Expiry time is required"
+
+    if (formData.cookedDate && formData.cookedTime) {
+      const cookedDateTime = new Date(`${formData.cookedDate}T${formData.cookedTime}`)
+      if (cookedDateTime > new Date()) {
+        newErrors.cookedTime = "Cooked time cannot be in the future"
+      }
+    } else {
+      newErrors.cookedTime = "Cooked time is required"
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -197,6 +211,12 @@ function CreateFoodForm() {
       formDataToSend.append('location', formData.location)
       formDataToSend.append('expiryDate', expiryDateTime.toISOString())
 
+      const cookedAt = new Date(`${formData.cookedDate}T${formData.cookedTime}`)
+      formDataToSend.append('cookedAt', cookedAt.toISOString())
+
+      formDataToSend.append('spiceLevel', formData.spiceLevel)
+      formDataToSend.append('ingredients', formData.ingredients)
+
       // Append all image files
       selectedFiles.forEach(file => {
         formDataToSend.append('images', file)
@@ -275,6 +295,45 @@ function CreateFoodForm() {
                     disabled={isLoading}
                   />
                   {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Spice Level *</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {[
+                      { id: 'no_spicy', label: 'No Spicy', emoji: '🌱' },
+                      { id: 'medium_spicy', label: 'Medium', emoji: '🌶️' },
+                      { id: 'spicy', label: 'Spicy', emoji: '🔥' },
+                      { id: 'very_spicy', label: 'Very Spicy', emoji: '💥' },
+                    ].map((level) => (
+                      <Button
+                        key={level.id}
+                        type="button"
+                        variant={formData.spiceLevel === level.id ? "default" : "outline"}
+                        className={`h-12 flex flex-col items-center justify-center gap-1 ${formData.spiceLevel === level.id ? "border-2 border-primary" : ""}`}
+                        onClick={() => setFormData({ ...formData, spiceLevel: level.id as SpiceLevel })}
+                      >
+                        <span className="text-lg">{level.emoji}</span>
+                        <span className="text-[10px] font-semibold uppercase">{level.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ingredients">
+                    Main Ingredients <span className="text-muted-foreground text-xs">(Optional, max 1000 • {formData.ingredients.length}/1000)</span>
+                  </Label>
+                  <Textarea
+                    id="ingredients"
+                    placeholder="List major ingredients and allergens (e.g., nuts, dairy, soy)"
+                    value={formData.ingredients}
+                    onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
+                    maxLength={1000}
+                    rows={3}
+                    disabled={isLoading}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Listing common allergens helps make the community safer.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -479,6 +538,47 @@ function CreateFoodForm() {
                     />
                     {errors.expiryTime && <p className="text-sm text-destructive">{errors.expiryTime}</p>}
                   </div>
+                </div>
+
+                <div className="space-y-4 p-4 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ChefHat className="h-4 w-4 text-orange-500" />
+                    <Label className="text-orange-500 font-semibold uppercase tracking-wider text-xs">Freshness Tracking</Label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cookedDate">When was it cooked? *</Label>
+                      <Input
+                        id="cookedDate"
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={formData.cookedDate}
+                        onChange={(e) => {
+                          setFormData({ ...formData, cookedDate: e.target.value })
+                          setErrors({ ...errors, cookedTime: "" })
+                        }}
+                        disabled={isLoading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cookedTime">Time *</Label>
+                      <Input
+                        id="cookedTime"
+                        type="time"
+                        value={formData.cookedTime}
+                        onChange={(e) => {
+                          setFormData({ ...formData, cookedTime: e.target.value })
+                          setErrors({ ...errors, cookedTime: "" })
+                        }}
+                        aria-invalid={!!errors.cookedTime}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                  {errors.cookedTime && <p className="text-xs text-destructive">{errors.cookedTime}</p>}
+                  <p className="text-[10px] text-muted-foreground italic">Providing accurate cooking time helps others know the food is fresh.</p>
                 </div>
 
                 <Button

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { MapPin, Clock, User, Flame } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { formatRelativeTime } from "@/lib/utils"
 import { useState } from "react"
 import { MapModal } from "@/components/ui/map-modal"
 import { api } from "@/lib/api"
@@ -53,21 +54,6 @@ export function HungerCard({ post }: HungerCardProps) {
   }
 
 
-
-  const getTimeAgo = (date: string) => {
-    const now = new Date()
-    const posted = new Date(date)
-    const diff = now.getTime() - posted.getTime()
-
-    const minutes = Math.floor(diff / (1000 * 60))
-    if (minutes < 60) return `${minutes}m ago`
-
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}h ago`
-
-    const days = Math.floor(hours / 24)
-    return `${days}d ago`
-  }
 
   const [isHovered, setIsHovered] = useState(false)
 
@@ -136,7 +122,7 @@ export function HungerCard({ post }: HungerCardProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <span>{getTimeAgo(post.timePosted)}</span>
+                <span>{formatRelativeTime(post.timePosted)}</span>
               </div>
             </div>
 

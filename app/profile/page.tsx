@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
 import { Loader2, User, Mail, Calendar, Utensils, Heart, MessageSquare, Award } from "lucide-react"
+import { formatMonthYear } from "@/lib/utils"
 
 interface Profile {
   name: string
@@ -134,7 +135,7 @@ export default function ProfilePage() {
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">Member since</p>
-                    <p className="font-medium">{new Date(profile.joinDate).toLocaleDateString()}</p>
+                    <p className="font-medium">{formatMonthYear(profile.joinDate)}</p>
                   </div>
                 </div>
               </CardContent>

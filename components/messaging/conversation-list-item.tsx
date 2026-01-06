@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Conversation } from "@/types/messaging"
 import { MessageCircle } from "lucide-react"
+import { formatRelativeTime } from "@/lib/utils"
 
 interface ConversationListItemProps {
     conversation: Conversation
 }
 
 export function ConversationListItem({ conversation }: ConversationListItemProps) {
-    const timeAgo = getTimeAgo(conversation.lastMessageAt)
+    const timeAgo = formatRelativeTime(conversation.lastMessageAt)
 
     return (
         <Link href={`/messages/${conversation.id}`}>
@@ -64,15 +65,4 @@ export function ConversationListItem({ conversation }: ConversationListItemProps
     )
 }
 
-function getTimeAgo(dateString: string): string {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-    if (diffInSeconds < 60) return "Just now"
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
-
-    return date.toLocaleDateString()
-}

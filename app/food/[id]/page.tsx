@@ -11,9 +11,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { Loader2, ArrowLeft, MapPin, Clock, Utensils, User, Trash2, CheckCircle, XCircle } from "lucide-react"
+import { Loader2, ArrowLeft, MapPin, Clock, Utensils, User, Trash2, CheckCircle, XCircle, Flame, CookingPot, ChefHat } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import Link from "next/link"
 import { useWebSocket } from "@/hooks/use-websocket"
+import { SpiceLevel } from "@/types/messaging"
+import { formatReadableDate, formatRelativeTime, formatMonthYear } from "@/lib/utils"
 
 interface FoodPost {
   id: string
@@ -28,6 +38,9 @@ interface FoodPost {
   ownerJoinDate: string
   isOwner: boolean
   imageUrls?: string[]
+  spiceLevel: SpiceLevel
+  ingredients: string
+  cookedAt?: string
 }
 
 interface Request {
@@ -46,11 +59,21 @@ export default function FoodDetailPage() {
   const [requests, setRequests] = useState<Request[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
   const fetchData = async () => {
     try {
-      const postData = (await api.getFoodPost(params.id as string)) as FoodPost
-      console.log('📦 Food post data:', postData)
+      const rawPost = (await api.getFoodPost(params.id as string)) as any
+      console.log('📦 Food post raw data:', rawPost)
+
+      // Normalize data to handle backend inconsistencies
+      const postData: FoodPost = {
+        ...rawPost,
+        ownerName: rawPost.ownerName || rawPost.userName || rawPost.user?.name || rawPost.author?.name || "Unknown Foodie",
+        ownerId: rawPost.ownerId || rawPost.userId || rawPost.user?.id || rawPost.author?.id,
+        ownerJoinDate: rawPost.ownerJoinDate || rawPost.user?.joinDate || rawPost.author?.joinDate || rawPost.joinDate,
+      }
+
       setPost(postData)
 
       if (postData.isOwner) {
@@ -107,8 +130,6 @@ export default function FoodDetailPage() {
   }, [lastMessage, post, params.id])
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this food post?")) return
-
     setActionLoading("delete")
     try {
       await api.deleteFoodPost(params.id as string)
@@ -123,8 +144,7 @@ export default function FoodDetailPage() {
         title: "Failed to delete",
         description: error instanceof Error ? error.message : "Something went wrong.",
       })
-    } finally {
-      setActionLoading(null)
+      setActionLoading(null) // Only reset if failed, otherwise we redirect
     }
   }
 
@@ -206,6 +226,50 @@ export default function FoodDetailPage() {
     }
   }
 
+  const getSpiceInfo = (level: SpiceLevel = "no_spicy") => {
+    switch (level) {
+      case "no_spicy":
+        return { label: "No Spice", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", emoji: "🌱" }
+      case "medium_spicy":
+        return { label: "Medium Spicy", color: "bg-amber-500/10 text-amber-500 border-amber-500/20", emoji: "🌶️" }
+      case "spicy":
+        return { label: "Spicy", color: "bg-red-500/10 text-red-500 border-red-500/20", emoji: "🔥" }
+      case "very_spicy":
+        return { label: "Very Spicy", color: "bg-purple-500/10 text-purple-400 border-purple-500/20", emoji: "💥" }
+      default:
+        return { label: "No Spice", color: "bg-gray-500/10 text-gray-400 border-gray-500/20", emoji: "🌱" }
+    }
+  }
+
+  const getFreshnessInfo = (cookedAt?: string) => {
+    if (!cookedAt) return null
+
+    const now = new Date()
+    const cooked = new Date(cookedAt)
+    const diffMs = now.getTime() - cooked.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    const diffMins = Math.floor(diffMs / (1000 * 60))
+
+    let label = ""
+    let color = ""
+
+    if (diffHours < 2) {
+      label = diffMins < 60 ? `Freshly prepared (${diffMins}m ago)` : "Freshly prepared (1h ago)"
+      color = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+    } else if (diffHours < 6) {
+      label = `Prepared ${Math.floor(diffHours)}h ago`
+      color = "bg-amber-500/10 text-amber-500 border-amber-500/20"
+    } else if (diffHours < 24) {
+      label = `Prepared ${Math.floor(diffHours)}h ago`
+      color = "bg-slate-500/10 text-slate-400 border-slate-500/20"
+    } else {
+      label = "Prepared yesterday"
+      color = "bg-slate-500/10 text-slate-500 border-slate-500/20"
+    }
+
+    return { label, color }
+  }
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -229,6 +293,15 @@ export default function FoodDetailPage() {
                       FOOD AVAILABLE
                     </Badge>
                     <Badge className={getStatusColor(post.status)}>{post.status.toUpperCase()}</Badge>
+                    <Badge variant="outline" className={`${getSpiceInfo(post.spiceLevel).color} border`}>
+                      {getSpiceInfo(post.spiceLevel).emoji} {getSpiceInfo(post.spiceLevel).label.toUpperCase()}
+                    </Badge>
+                    {post.cookedAt && getFreshnessInfo(post.cookedAt) && (
+                      <Badge variant="outline" className={`${getFreshnessInfo(post.cookedAt)?.color} border`}>
+                        <ChefHat className="h-3 w-3 mr-1" />
+                        {getFreshnessInfo(post.cookedAt)?.label.toUpperCase()}
+                      </Badge>
+                    )}
                   </div>
                   <CardTitle className="text-2xl">{post.title}</CardTitle>
                 </div>
@@ -237,7 +310,7 @@ export default function FoodDetailPage() {
                     variant="outline"
                     size="icon"
                     className="text-destructive hover:bg-destructive/10 bg-transparent"
-                    onClick={handleDelete}
+                    onClick={() => setIsDeleteModalOpen(true)}
                     disabled={!!actionLoading}
                   >
                     {actionLoading === "delete" ? (
@@ -251,10 +324,51 @@ export default function FoodDetailPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {/* Owner Info - Prominent */}
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 shadow-sm">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-background shadow-inner">
+                  <User className="h-6 w-6 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-lg leading-none">{post.ownerName}</p>
+                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-medium bg-primary/10 text-primary border-none">
+                      OWNER
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Sharing since {formatMonthYear(post.ownerJoinDate)}
+                  </p>
+                </div>
+                {!post.isOwner && (
+                  <Button
+                    size="sm"
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 glow-hover shadow-md px-4"
+                    onClick={() => router.push(`/messages?ownerId=${post.ownerId}&postId=${post.id}`)}
+                  >
+                    Message
+                  </Button>
+                )}
+              </div>
+
+              <Separator />
+
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
                 <p className="text-base leading-relaxed">{post.description}</p>
               </div>
+
+              {post.ingredients && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                    <CookingPot className="h-4 w-4" />
+                    Ingredients & Allergens
+                  </h3>
+                  <p className="text-base leading-relaxed italic text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+                    {post.ingredients}
+                  </p>
+                </div>
+              )}
 
               {post.imageUrls && post.imageUrls.length > 0 && (
                 <>
@@ -302,23 +416,24 @@ export default function FoodDetailPage() {
                   <Clock className="h-5 w-5 text-tertiary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Expires</p>
-                    <p className="font-medium">{new Date(post.expiryDate).toLocaleString()}</p>
+                    <p className="font-medium">{formatReadableDate(post.expiryDate)} ({formatRelativeTime(post.expiryDate)})</p>
                   </div>
                 </div>
+
+                {post.cookedAt && (
+                  <div className="flex items-center gap-3">
+                    <ChefHat className="h-5 w-5 text-orange-500" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Prepared At</p>
+                      <p className="font-medium">{formatReadableDate(post.cookedAt)}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Separator />
 
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Posted by</p>
-                  <p className="font-medium">{post.ownerName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Member since {new Date(post.ownerJoinDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
+
 
               {post.isOwner && (requests ?? []).length > 0 && (
                 <>
@@ -384,6 +499,32 @@ export default function FoodDetailPage() {
 
         <BottomNav />
       </div>
+
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Food Post</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-medium text-foreground">"{post.title}"</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={!!actionLoading}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={!!actionLoading}>
+              {actionLoading === "delete" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Post"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AuthGuard>
   )
 }

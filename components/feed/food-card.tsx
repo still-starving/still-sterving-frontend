@@ -2,13 +2,15 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Clock, User, Utensils, Play, MessageCircle } from "lucide-react"
+import { MapPin, Clock, User, Utensils, Play, MessageCircle, Flame, Leaf, CookingPot, ChefHat } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import Image from "next/image"
 import { MapModal } from "@/components/ui/map-modal"
+import { SpiceLevel } from "@/types/messaging"
+import { formatReadableDate, formatRelativeTime, getFreshnessLevel } from "@/lib/utils"
 
 interface FoodCardProps {
   post: {
@@ -24,6 +26,9 @@ interface FoodCardProps {
     imageUrls?: string[]
     isOwner?: boolean
     price?: number
+    spiceLevel?: SpiceLevel
+    ingredients?: string
+    cookedAt?: string
   }
   onUpdate?: () => void
 }
@@ -53,22 +58,19 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
     }
   }
 
-  const getTimeRemaining = (expiryDate: string) => {
-    const now = new Date()
-    const expiry = new Date(expiryDate)
-    const diff = expiry.getTime() - now.getTime()
-
-    if (diff < 0) return "Expired"
-
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-    if (hours < 24) {
-      return `${hours}h ${minutes}m`
+  const getSpiceInfo = (level: SpiceLevel = "no_spicy") => {
+    switch (level) {
+      case "no_spicy":
+        return { label: "Mild", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30", emoji: "🌱" }
+      case "medium_spicy":
+        return { label: "Medium", color: "bg-amber-500/20 text-amber-500 border-amber-500/30", emoji: "🌶️" }
+      case "spicy":
+        return { label: "Spicy", color: "bg-red-500/20 text-red-500 border-red-500/30", emoji: "🔥" }
+      case "very_spicy":
+        return { label: "Very Spicy", color: "bg-purple-600/20 text-purple-400 border-purple-500/30", emoji: "💥" }
+      default:
+        return { label: "Mild", color: "bg-gray-500/20 text-gray-400 border-gray-500/30", emoji: "🌱" }
     }
-
-    const days = Math.floor(hours / 24)
-    return `${days}d ${hours % 24}h`
   }
 
   const handleRequest = async (e: React.MouseEvent) => {
@@ -174,6 +176,11 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
             <Badge className={`${getStatusColor(post.status)} font-semibold text-xs px-2 py-1`}>
               {post.status.toUpperCase()}
             </Badge>
+            {post.spiceLevel && (
+              <Badge className={`${getSpiceInfo(post.spiceLevel).color} font-bold text-[10px] px-1.5 py-0.5 border`}>
+                {getSpiceInfo(post.spiceLevel).emoji} {getSpiceInfo(post.spiceLevel).label.toUpperCase()}
+              </Badge>
+            )}
           </div>
 
           {/* Image Navigation - Only show if multiple images and hovered */}
@@ -205,6 +212,12 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
             <h3 className="text-lg font-bold text-white drop-shadow-2xl line-clamp-2">
               {post.title}
             </h3>
+            {post.cookedAt && (
+              <div className={`flex items-center gap-1 text-[10px] font-bold drop-shadow-lg mt-0.5 ${getFreshnessLevel(post.cookedAt).color}`}>
+                <ChefHat className="h-3 w-3" />
+                {`${getFreshnessLevel(post.cookedAt).label}: ${formatRelativeTime(post.cookedAt)}`.toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
 
@@ -228,11 +241,24 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <span className={getTimeRemaining(post.expiryDate).includes("Expired") ? "text-red-400" : ""}>
-                  {getTimeRemaining(post.expiryDate)}
+                <span className={isExpired ? "text-red-400" : ""}>
+                  {isExpired ? "Expired" : `Expires ${formatRelativeTime(post.expiryDate)}`}
                 </span>
               </div>
             </div>
+
+            {/* Ingredients */}
+            {post.ingredients && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  <CookingPot className="h-3 w-3 text-emerald-400" />
+                  Ingredients
+                </div>
+                <p className="text-xs text-gray-300 line-clamp-2 italic leading-relaxed">
+                  {post.ingredients}
+                </p>
+              </div>
+            )}
 
             {/* Location */}
             <div className="flex items-center justify-between gap-2 text-sm">

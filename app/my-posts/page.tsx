@@ -11,7 +11,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { Loader2, Clock, MapPin, Trash2, Users } from "lucide-react"
+import { Loader2, Clock, MapPin, Trash2, Users, Flame, CookingPot } from "lucide-react"
+import { SpiceLevel } from "@/types/messaging"
+import { formatRelativeTime } from "@/lib/utils"
 
 interface FoodPost {
   id: string
@@ -21,6 +23,9 @@ interface FoodPost {
   location: string
   requestCount: number
   imageUrls?: string[]
+  spiceLevel?: SpiceLevel
+  ingredients?: string
+  cookedAt?: string
 }
 
 interface HungerBroadcast {
@@ -195,7 +200,7 @@ export default function MyPostsPage() {
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
-                            <span>Expires: {new Date(post.expiryDate).toLocaleDateString()}</span>
+                            <span>Expires {formatRelativeTime(post.expiryDate)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Users className="h-4 w-4" />
@@ -247,7 +252,7 @@ export default function MyPostsPage() {
                         <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
-                            <span>{new Date(broadcast.timePosted).toLocaleString()}</span>
+                            <span>Posted {formatRelativeTime(broadcast.timePosted)}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4" />

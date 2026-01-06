@@ -13,6 +13,7 @@ import { Loader2, MapPin, User, Calendar, MessageCircle } from "lucide-react"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { formatRelativeTime } from "@/lib/utils"
 
 interface Request {
   id: string
@@ -163,7 +164,7 @@ export default function MyRequestsPage() {
 
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        <span>Requested: {new Date(request.createdAt).toLocaleDateString()}</span>
+                        <span>Requested {formatRelativeTime(request.createdAt)}</span>
                       </div>
 
                       {request.status === "accepted" && request.pickupLocation && (

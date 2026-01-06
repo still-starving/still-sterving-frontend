@@ -111,6 +111,8 @@ export interface WSErrorMessage extends WSBaseMessage {
 }
 
 // Feed broadcast types
+export type SpiceLevel = 'no_spicy' | 'medium_spicy' | 'spicy' | 'very_spicy';
+
 export interface FoodFeedItem {
     type: 'food'
     id: string
@@ -125,6 +127,9 @@ export interface FoodFeedItem {
     imageUrls?: string[]
     isOwner?: boolean
     price?: number
+    spiceLevel: SpiceLevel
+    ingredients: string
+    cookedAt?: string
 }
 
 export interface HungerFeedItem {

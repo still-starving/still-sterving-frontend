@@ -25,6 +25,7 @@ export function TopNav() {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [pendingRequestCount, setPendingRequestCount] = useState(0)
   const [myRequestsUnviewedCount, setMyRequestsUnviewedCount] = useState(0)
+  const [userName, setUserName] = useState<string | null>(null)
   const { lastMessage } = useWebSocket()
   const { toast } = useToast()
 
@@ -58,6 +59,19 @@ export function TopNav() {
       }
     }
     fetchUnreadNotifications()
+  }, [])
+
+  // Fetch current user name on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const data = await api.getMe()
+        setUserName((data as any).name || null)
+      } catch (error) {
+        setUserName(null)
+      }
+    }
+    fetchUser()
   }, [])
 
   // Update unread count when new messages arrive
@@ -254,16 +268,28 @@ export function TopNav() {
         {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="rounded-full bg-transparent">
-              <User className="h-5 w-5" />
-              <span className="sr-only">User menu</span>
+            <Button variant="outline" className="rounded-full bg-transparent flex items-center gap-2 pl-2 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-4 w-4 text-primary" />
+              </div>
+              {userName && (
+                <span className="hidden lg:inline-block font-medium text-sm pr-1">
+                  {userName}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{userName || "My Account"}</p>
+                <p className="text-xs leading-none text-muted-foreground">Logged in</p>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/profile" className="cursor-pointer">
+              <Link href="/profile" className="cursor-pointer flex items-center">
+                <User className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </DropdownMenuItem>
