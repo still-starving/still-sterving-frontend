@@ -11,6 +11,7 @@ import { MapModal } from "@/components/ui/map-modal"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { MessageCircle } from "lucide-react"
+import { getAuthToken } from "@/lib/api"
 
 
 interface HungerCardProps {
@@ -31,9 +32,20 @@ export function HungerCard({ post }: HungerCardProps) {
   const { toast } = useToast()
   const [isMapOpen, setIsMapOpen] = useState(false)
 
+  // ... (inside HungerCard)
 
   const handleMessage = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    const token = getAuthToken()
+    if (!token) {
+      toast({
+        title: "Login Required",
+        description: "Please login to help.",
+      })
+      router.push(`/login?returnUrl=/feed`)
+      return
+    }
+
     try {
       // Record the offer on the backend
       await api.offerFood(post.id)

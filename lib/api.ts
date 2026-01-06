@@ -242,7 +242,8 @@ export const api = {
   getMe: () => apiRequest("/auth/me"),
 
   // Feed
-  getFeed: (type?: "all" | "food" | "hunger") => apiRequest(`/feed${type ? `?type=${type}` : ""}`),
+  getFeed: (type?: "all" | "food" | "hunger") =>
+    apiRequest(`/feed${type ? `?type=${type}` : ""}`, { requiresAuth: false }),
 
   // Food Posts
   createFoodPost: (data: any) => {

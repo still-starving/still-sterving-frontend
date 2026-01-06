@@ -11,6 +11,7 @@ import Image from "next/image"
 import { MapModal } from "@/components/ui/map-modal"
 import { SpiceLevel } from "@/types/messaging"
 import { formatReadableDate, formatRelativeTime, getFreshnessLevel } from "@/lib/utils"
+import { getAuthToken } from "@/lib/api"
 
 interface FoodCardProps {
   post: {
@@ -73,8 +74,20 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
     }
   }
 
+  // ... (inside FoodCard)
+
   const handleRequest = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    const token = getAuthToken()
+    if (!token) {
+      toast({
+        title: "Login Required",
+        description: "Please login to request food.",
+      })
+      router.push(`/login?returnUrl=/feed`)
+      return
+    }
+
     setIsRequesting(true)
     try {
       await api.requestFood(post.id)
@@ -96,6 +109,15 @@ export function FoodCard({ post, onUpdate }: FoodCardProps) {
 
   const handleMessage = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    const token = getAuthToken()
+    if (!token) {
+      toast({
+        title: "Login Required",
+        description: "Please login to send a message.",
+      })
+      router.push(`/login?returnUrl=/feed`)
+      return
+    }
 
     try {
       const conversation = await api.createConversation({
