@@ -282,7 +282,10 @@ export default function FeedPage() {
                     >
                       {hungerItems.map((item, index) => (
                         <div key={`hunger-${item.id}-${index}`} className="flex-none w-[320px] md:w-[380px]">
-                          <HungerCard post={item} />
+                          <HungerCard
+                            post={item}
+                            userLocation={latitude && longitude ? { lat: latitude, lng: longitude } : undefined}
+                          />
                         </div>
                       ))}
                     </div>

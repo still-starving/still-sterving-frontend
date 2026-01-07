@@ -412,6 +412,7 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
         location={post.location}
         latitude={post.latitude}
         longitude={post.longitude}
+        userLocation={userLocation}
         title={post.title}
       />
     </div>

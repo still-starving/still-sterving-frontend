@@ -27,9 +27,10 @@ interface HungerCardProps {
     latitude?: number
     longitude?: number
   }
+  userLocation?: { lat: number; lng: number }
 }
 
-export function HungerCard({ post }: HungerCardProps) {
+export function HungerCard({ post, userLocation }: HungerCardProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isMapOpen, setIsMapOpen] = useState(false)
@@ -199,6 +200,7 @@ export function HungerCard({ post }: HungerCardProps) {
         location={post.location}
         latitude={post.latitude}
         longitude={post.longitude}
+        userLocation={userLocation}
         title={`Help ${post.userName}`}
       />
     </div>

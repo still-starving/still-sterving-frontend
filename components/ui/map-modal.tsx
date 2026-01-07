@@ -1,8 +1,10 @@
 "use client"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { MapPin, X } from "lucide-react"
+import { MapPin, X, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { calculateDistance } from "@/lib/geo"
 
 interface MapModalProps {
     isOpen: boolean
@@ -10,11 +12,17 @@ interface MapModalProps {
     location: string
     latitude?: number
     longitude?: number
+    userLocation?: { lat: number; lng: number }
     title?: string
 }
 
-export function MapModal({ isOpen, onClose, location, latitude, longitude, title }: MapModalProps) {
+export function MapModal({ isOpen, onClose, location, latitude, longitude, userLocation, title }: MapModalProps) {
     const encodedLocation = encodeURIComponent(location)
+
+    // Calculate distance if both target and user locations are available
+    const distance = (latitude && longitude && userLocation)
+        ? calculateDistance(userLocation.lat, userLocation.lng, latitude, longitude).toFixed(1)
+        : null
 
     // Prioritize lat/lng for higher accuracy
     const query = latitude && longitude ? `${latitude},${longitude}` : encodedLocation
@@ -31,8 +39,14 @@ export function MapModal({ isOpen, onClose, location, latitude, longitude, title
                                 <MapPin className="h-5 w-5 text-secondary" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl font-bold text-foreground">
+                                <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
                                     {title || "Location"}
+                                    {distance !== null && (
+                                        <Badge variant="secondary" className="h-5 text-[10px] px-1.5 bg-secondary/10 text-secondary border-secondary/20 font-medium">
+                                            <Navigation className="h-2.5 w-2.5 mr-1" />
+                                            {distance} km away
+                                        </Badge>
+                                    )}
                                 </DialogTitle>
                                 <p className="text-sm text-muted-foreground mt-1">{location}</p>
                             </div>
