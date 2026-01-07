@@ -8,12 +8,17 @@ interface MapModalProps {
     isOpen: boolean
     onClose: () => void
     location: string
+    latitude?: number
+    longitude?: number
     title?: string
 }
 
-export function MapModal({ isOpen, onClose, location, title }: MapModalProps) {
+export function MapModal({ isOpen, onClose, location, latitude, longitude, title }: MapModalProps) {
     const encodedLocation = encodeURIComponent(location)
-    const mapUrl = `https://www.google.com/maps?q=${encodedLocation}&output=embed`
+
+    // Prioritize lat/lng for higher accuracy
+    const query = latitude && longitude ? `${latitude},${longitude}` : encodedLocation
+    const mapUrl = `https://www.google.com/maps?q=${query}&output=embed`
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

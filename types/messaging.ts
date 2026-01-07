@@ -144,6 +144,8 @@ export interface HungerFeedItem {
     ownerId: string
     timePosted: string
     isOwner?: boolean
+    latitude?: number
+    longitude?: number
 }
 
 export interface WSFoodPostMessage extends WSBaseMessage {

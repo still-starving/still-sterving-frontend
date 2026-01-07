@@ -24,6 +24,8 @@ interface HungerCardProps {
     ownerId: string
     timePosted: string
     isOwner?: boolean
+    latitude?: number
+    longitude?: number
   }
 }
 
@@ -195,6 +197,8 @@ export function HungerCard({ post }: HungerCardProps) {
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         location={post.location}
+        latitude={post.latitude}
+        longitude={post.longitude}
         title={`Help ${post.userName}`}
       />
     </div>

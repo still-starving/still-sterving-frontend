@@ -410,6 +410,8 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         location={post.location}
+        latitude={post.latitude}
+        longitude={post.longitude}
         title={post.title}
       />
     </div>
