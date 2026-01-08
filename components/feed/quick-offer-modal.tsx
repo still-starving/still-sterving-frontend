@@ -112,8 +112,8 @@ export function QuickOfferModal({
             // But if apiRequest returns JSON directly, we are good.
 
             toast({
-                title: "Offer sent!",
-                description: `Your offer has been sent to ${recipientName}.`,
+                title: "Offer Sent!",
+                description: `Your message has been sent to ${recipientName}. Check your messages for their reply!`,
             })
 
             onClose()
@@ -135,9 +135,9 @@ export function QuickOfferModal({
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Offer Food to {recipientName}</DialogTitle>
+                    <DialogTitle>Offer Help to {recipientName}</DialogTitle>
                     <DialogDescription>
-                        Send a quick message to offer help. You can include a price if needed.
+                        Send a friendly message to coordinate. You can propose a price if it's a paid item.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">

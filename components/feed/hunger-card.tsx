@@ -42,8 +42,8 @@ export function HungerCard({ post, userLocation }: HungerCardProps) {
     const token = getAuthToken()
     if (!token) {
       toast({
-        title: "Login Required",
-        description: "Please login to help.",
+        title: "Join the Community!",
+        description: "Please sign in to offer help to your neighbors.",
       })
       router.push(`/login?returnUrl=/feed`)
       return
@@ -67,8 +67,8 @@ export function HungerCard({ post, userLocation }: HungerCardProps) {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Action failed",
-        description: error.message || "Something went wrong.",
+        title: "Oops!",
+        description: error.message || "We couldn't process your offer right now. Please try again.",
       })
     }
   }

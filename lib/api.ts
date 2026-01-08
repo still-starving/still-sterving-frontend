@@ -173,7 +173,7 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}, ret
         headers["Authorization"] = `Bearer ${token}`
       } else if (requiresAuth) {
         // If no token at all and auth is required, we can't proceed reliably
-        throw new Error("Unauthorized: No access token available")
+        throw new Error("Please sign in to continue.")
       }
     }
   }
@@ -194,7 +194,7 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}, ret
       }
 
       // Refresh failed, logout handled in refreshAccessToken
-      throw new Error("Unauthorized")
+      throw new Error("Your session has expired. Please sign in again.")
     }
 
     if (!response.ok) {
@@ -207,7 +207,13 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}, ret
         console.warn(`API Status [${response.status}] ${endpoint}:`, errorData)
       }
 
-      const errorMessage = errorData.message || `Request failed with status ${response.status}`
+      let errorMessage = errorData.message || "Something went wrong on our end"
+
+      // Sanitize technical leaks
+      if (errorMessage.toLowerCase().includes("token") || errorMessage.toLowerCase().includes("unauthorized")) {
+        errorMessage = "Your session has expired. Please sign in again."
+      }
+
       const error = new Error(errorMessage) as any
       error.status = response.status
       error.data = errorData
@@ -219,7 +225,7 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}, ret
   } catch (error) {
     // Handle network errors (e.g., backend not running)
     if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new Error("Unable to connect to the server. Please ensure the backend is running.")
+      throw new Error("We're having trouble reaching the server. Please check your internet connection.")
     }
     throw error
   }

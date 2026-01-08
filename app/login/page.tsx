@@ -66,7 +66,7 @@ export default function LoginPage() {
 
       toast({
         title: "Welcome back!",
-        description: "You've successfully logged in.",
+        description: "It's great to see you again. Your neighbors have missed you!",
       })
 
       router.push("/")
@@ -76,8 +76,8 @@ export default function LoginPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid email or password. Please try again.",
+        title: "We couldn't sign you in",
+        description: error instanceof Error ? error.message : "The email or password doesn't match. Please try again or reset your password.",
       })
       setIsLoading(false)
     }

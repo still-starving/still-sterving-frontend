@@ -91,8 +91,8 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
     const token = getAuthToken()
     if (!token) {
       toast({
-        title: "Login Required",
-        description: "Please login to request food.",
+        title: "Join the Community!",
+        description: "Please login to request food and start sharing with neighbors.",
       })
       router.push(`/login?returnUrl=/feed`)
       return
@@ -102,8 +102,8 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
     try {
       await api.requestFood(post.id)
       toast({
-        title: "Request sent!",
-        description: "The food owner will be notified of your request.",
+        title: "Request Sent!",
+        description: `We've notified ${post.ownerName}. You can see your requests in the "My Requests" tab.`,
       })
       onUpdate?.()
     } catch (error: any) {
@@ -115,7 +115,7 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
 
       toast({
         variant: "destructive",
-        title: "Request failed",
+        title: "Couldn't send request",
         description,
       })
     } finally {
@@ -128,8 +128,8 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
     const token = getAuthToken()
     if (!token) {
       toast({
-        title: "Login Required",
-        description: "Please login to send a message.",
+        title: "Hang on!",
+        description: "Please sign in to send a message and coordinate with others.",
       })
       router.push(`/login?returnUrl=/feed`)
       return

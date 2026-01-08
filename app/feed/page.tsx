@@ -50,8 +50,8 @@ export default function FeedPage() {
       console.error("Feed fetch failed:", error)
       toast({
         variant: "destructive",
-        title: "Failed to load feed",
-        description: error instanceof Error ? error.message : "Backend error. Please check the backend logs.",
+        title: "We couldn't refresh the feed",
+        description: "There was a temporary connection issue. Please check your internet or try again in a moment.",
       })
       // Set empty feed to prevent infinite loading
       setAllFeed([])

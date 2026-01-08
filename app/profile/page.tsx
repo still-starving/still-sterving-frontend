@@ -45,8 +45,8 @@ export default function ProfilePage() {
       } catch (error) {
         toast({
           variant: "destructive",
-          title: "Failed to load profile",
-          description: error instanceof Error ? error.message : "Something went wrong.",
+          title: "Couldn't load your profile",
+          description: "We had trouble retrieving your information. Please refresh the page.",
         })
       } finally {
         setIsLoading(false)
@@ -66,14 +66,14 @@ export default function ProfilePage() {
       await api.updateProfile({ preferredRadiusKm: radius })
       setProfile(prev => prev ? { ...prev, preferredRadiusKm: radius } : null)
       toast({
-        title: "Settings saved",
-        description: `Your search radius is now set to ${radius} km.`,
+        title: "Settings Updated!",
+        description: `Neighbors within ${radius} km will now appear in your feed.`,
       })
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to save settings",
-        description: error instanceof Error ? error.message : "Something went wrong.",
+        title: "Couldn't save your settings",
+        description: "We encountered a small hiccup. Please try saving again.",
       })
     } finally {
       setIsSaving(false)

@@ -57,8 +57,8 @@ export default function CreateHungerPage() {
       if (!latitude || !longitude || latitude === 0 || longitude === 0) {
         toast({
           variant: "destructive",
-          title: "Location missing",
-          description: "Please acquire your location before broadcasting.",
+          title: "Location Missing",
+          description: "We need your coordinates to let nearby neighbors know you need help.",
         })
         setIsLoading(false)
         return
@@ -71,8 +71,8 @@ export default function CreateHungerPage() {
       })
 
       toast({
-        title: "Broadcast sent!",
-        description: "Others in your area will see your hunger broadcast.",
+        title: "Broadcast Sent!",
+        description: "Your request for help is now visible to people in your area.",
       })
       router.push("/feed")
     } catch (error) {

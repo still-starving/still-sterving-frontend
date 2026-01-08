@@ -134,8 +134,8 @@ export default function FoodDetailPage() {
     try {
       await api.deleteFoodPost(params.id as string)
       toast({
-        title: "Post deleted",
-        description: "Your food post has been removed.",
+        title: "Post successfully removed",
+        description: "Your food post is no longer visible to the community.",
       })
       router.push("/feed")
     } catch (error) {
@@ -158,15 +158,15 @@ export default function FoodDetailPage() {
 
       if (conversationId) {
         toast({
-          title: "Request accepted",
-          description: "Opening chat to coordinate pickup...",
+          title: "Offer Accepted!",
+          description: "We're opening the chat so you can coordinate the handoff.",
         })
         // Navigate to the conversation
         router.push(`/messages/${conversationId}`)
       } else {
         toast({
-          title: "Request accepted",
-          description: "The requester will be notified.",
+          title: "Offer Accepted",
+          description: "The neighbor has been notified and can now contact you.",
         })
         fetchData()
       }
@@ -186,8 +186,8 @@ export default function FoodDetailPage() {
     try {
       await api.rejectRequest(params.id as string, requestId)
       toast({
-        title: "Request rejected",
-        description: "The requester will be notified.",
+        title: "Offer Declined",
+        description: "The neighbor has been notified. This item remains available for others.",
       })
       fetchData()
     } catch (error) {
@@ -503,9 +503,9 @@ export default function FoodDetailPage() {
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Food Post</DialogTitle>
+            <DialogTitle>Remove this post?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-medium text-foreground">"{post.title}"</span>? This action cannot be undone.
+              Are you sure you want to remove <span className="font-medium text-foreground">"{post.title}"</span>? Neighbors will no longer be able to see or request it.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

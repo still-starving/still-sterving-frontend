@@ -49,8 +49,8 @@ export default function MyRequestsPage() {
       } catch (error) {
         toast({
           variant: "destructive",
-          title: "Failed to load requests",
-          description: error instanceof Error ? error.message : "Something went wrong.",
+          title: "Couldn't load your requests",
+          description: "We're having trouble showing your request history. Please refresh the page.",
         })
       } finally {
         setIsLoading(false)
@@ -104,8 +104,8 @@ export default function MyRequestsPage() {
       } else if (foodRequest.status === "rejected") {
         toast({
           variant: "destructive",
-          title: "Request declined",
-          description: `Your request for ${foodRequest.foodTitle || "food"} was declined.`,
+          title: "Offer Declined",
+          description: `Your request for ${foodRequest.foodTitle || "this item"} was not accepted at this time.`,
         })
       }
     }

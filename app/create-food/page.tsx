@@ -172,8 +172,8 @@ function CreateFoodForm() {
       setImagePreviews(previews)
 
       toast({
-        title: "Images ready",
-        description: `${compressedFiles.length} image(s) compressed and ready to upload.`,
+        title: "Images Ready!",
+        description: `${compressedFiles.length} photo(s) optimized and ready to share.`,
       })
     } catch (error) {
       toast({
@@ -234,8 +234,8 @@ function CreateFoodForm() {
       } else {
         toast({
           variant: "destructive",
-          title: "Location missing",
-          description: "Please acquire your location before posting.",
+          title: "Where are you?",
+          description: "We need your location to show your post to nearby neighbors.",
         })
         setIsLoading(false)
         return
@@ -249,8 +249,8 @@ function CreateFoodForm() {
       await api.createFoodPost(formDataToSend)
 
       toast({
-        title: "Food posted!",
-        description: "Your food is now available for others to request.",
+        title: "Food Shared Successfully!",
+        description: "Thank you for helping reduce waste! Neighbors nearby can now see your contribution.",
       })
       router.push("/feed")
     } catch (error) {

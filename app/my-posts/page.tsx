@@ -81,8 +81,8 @@ export default function MyPostsPage() {
       console.error('❌ Error loading posts:', error)
       toast({
         variant: "destructive",
-        title: "Failed to load posts",
-        description: error instanceof Error ? error.message : "Something went wrong.",
+        title: "We couldn't load your posts",
+        description: "There was a problem retrieving your contributions. Please try again in a bit.",
       })
       // Set empty arrays on error
       setFoodPosts([])
@@ -112,8 +112,8 @@ export default function MyPostsPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to delete",
-        description: error instanceof Error ? error.message : "Something went wrong.",
+        title: "Couldn't remove broadcast",
+        description: "We encountered an error while trying to remove your broadcast. Please try again.",
       })
     } finally {
       setDeleteLoading(null)
@@ -132,8 +132,8 @@ export default function MyPostsPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to resolve",
-        description: error instanceof Error ? error.message : "Something went wrong.",
+        title: "Couldn't mark as resolved",
+        description: "We had trouble updating your broadcast. Please try again.",
       })
     } finally {
       setResolveLoading(null)
