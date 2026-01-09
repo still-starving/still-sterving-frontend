@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { Loader2 } from "lucide-react"
+import { Loader2, ArrowLeft } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -94,7 +94,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md mb-6">
+        <Link
+          href="/feed"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors group"
+        >
+          <div className="p-1.5 rounded-full bg-card/60 border border-white/5 group-hover:border-primary/20 group-hover:bg-primary/5">
+            <ArrowLeft className="h-4 w-4" />
+          </div>
+          Back to Public Feed
+        </Link>
+      </div>
       <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader className="space-y-3 text-center">
           <div className="flex flex-col items-center space-y-2">

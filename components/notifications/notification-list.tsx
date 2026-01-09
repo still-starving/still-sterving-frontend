@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2, Bell, Check, Heart, Users, Trash2, Clock, MapPin } from "lucide-react"
 import type { Notification } from "@/types/messaging"
 import { Button } from "@/components/ui/button"
+import { formatRelativeTime } from "@/lib/utils"
 
 interface NotificationListProps {
     onUnreadCountChange: (count: number) => void
@@ -74,21 +75,25 @@ export function NotificationList({ onUnreadCountChange, onClose }: NotificationL
 
     if (notifications.length === 0) {
         return (
-            <div className="py-12 text-center">
-                <div className="flex justify-center mb-3">
-                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <Bell className="h-6 w-6 text-muted-foreground" />
+            <div className="py-12 text-center bg-zinc-900/50">
+                <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 shadow-inner">
+                        <Bell className="h-8 w-8 text-zinc-600" />
                     </div>
                 </div>
-                <p className="text-sm text-muted-foreground">No notifications yet</p>
+                <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest">All caught up!</p>
+                <p className="text-xs text-zinc-600 mt-1">No new notifications for now.</p>
             </div>
         )
     }
 
     return (
-        <div className="max-h-[400px] flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 border-b">
-                <h4 className="font-semibold text-sm">Notifications</h4>
+        <div className="max-h-[500px] flex flex-col bg-zinc-950/50 backdrop-blur-xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-white/5">
+                <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    <h4 className="font-bold text-sm text-white uppercase tracking-wider">Notifications</h4>
+                </div>
                 {notifications.some(n => !n.isRead) && (
                     <Button
                         variant="ghost"
@@ -102,13 +107,15 @@ export function NotificationList({ onUnreadCountChange, onClose }: NotificationL
                     </Button>
                 )}
             </div>
-            <div className="overflow-y-auto">
+            <div className="overflow-y-auto p-2 space-y-1">
                 {notifications.map((notification) => (
                     <div
                         key={notification.id}
                         className={`
-                            px-4 py-3 border-b border-border/40 transition-colors cursor-pointer hover:bg-muted/50
-                            ${!notification.isRead ? 'bg-primary/5 border-l-2 border-l-primary' : ''}
+                            px-4 py-4 rounded-xl transition-all duration-300 cursor-pointer 
+                            ${!notification.isRead
+                                ? 'bg-primary/10 hover:bg-primary/15 border border-primary/20 shadow-lg shadow-primary/5'
+                                : 'hover:bg-white/5 border border-transparent hover:border-white/5'}
                         `}
                         onClick={() => {
                             if (!notification.isRead) handleMarkAsRead(notification.id)
@@ -124,14 +131,19 @@ export function NotificationList({ onUnreadCountChange, onClose }: NotificationL
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start gap-2">
-                                    <p className={`text-sm font-semibold truncate ${!notification.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                        {notification.title}
-                                    </p>
-                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                        {new Date(notification.createdAt).toLocaleDateString()}
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        {!notification.isRead && (
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0 shadow-[0_0_8px_rgba(255,159,28,0.8)]" />
+                                        )}
+                                        <p className={`text-sm font-bold leading-none truncate ${!notification.isRead ? 'text-white' : 'text-zinc-300'}`}>
+                                            {notification.title}
+                                        </p>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-zinc-500 whitespace-nowrap uppercase tracking-tighter">
+                                        {formatRelativeTime(notification.createdAt)}
                                     </span>
                                 </div>
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
+                                <p className={`text-xs mt-2 leading-relaxed ${!notification.isRead ? 'text-zinc-300' : 'text-zinc-400'}`}>
                                     {notification.message}
                                 </p>
                             </div>

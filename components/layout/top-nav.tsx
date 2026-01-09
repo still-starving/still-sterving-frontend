@@ -204,7 +204,7 @@ export function TopNav() {
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[350px] p-0 overflow-hidden">
+              <DropdownMenuContent align="end" className="w-[400px] p-0 overflow-hidden bg-card/95 backdrop-blur-2xl border-white/10 shadow-2xl">
                 <NotificationList
                   onUnreadCountChange={setUnreadNotificationCount}
                 />

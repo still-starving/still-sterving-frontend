@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { api } from "@/lib/api"
+import { api, getAccessToken } from "@/lib/api"
+import { getAuthToken } from "@/lib/api" // Ensure explicit import if needed, or merge
 import { Loader2, ArrowLeft, MapPin, Clock, Utensils, User, Trash2, CheckCircle, XCircle, Flame, CookingPot, ChefHat, Star } from "lucide-react"
 import {
   Dialog,
@@ -124,14 +125,18 @@ export default function FoodDetailPage() {
 
   useEffect(() => {
     fetchData()
-    // Fetch user for ID
-    api.getMe().then((data: any) => {
-      const uid = data?.id || data?.uuid || data?.sub || data?.userId || data?.ID || data?.UID
-      console.log('🆔 currentUserId from getMe:', uid)
-      if (uid) setCurrentUserId(uid)
-    }).catch((err) => {
-      console.error('❌ Failed to fetch user ID:', err)
-    })
+    // Fetch user for ID only if logged in
+    const token = getAuthToken()
+    if (token) {
+      api.getMe().then((data: any) => {
+        const uid = data?.id || data?.uuid || data?.sub || data?.userId || data?.ID || data?.UID
+        console.log('🆔 currentUserId from getMe:', uid)
+        if (uid) setCurrentUserId(uid)
+      }).catch((err) => {
+        // Silent fail for cleaner console
+        // console.error('❌ Failed to fetch user ID:', err)
+      })
+    }
   }, [params.id])
 
   // Listen for new request notifications (for food owners)

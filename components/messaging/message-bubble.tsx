@@ -33,7 +33,7 @@ export function MessageBubble({ message, isOwnMessage }: MessageBubbleProps) {
                 )}
             >
                 {(message.type === 'image' || message.metadata?.imageUrl) ? (
-                    <div className="relative aspect-video w-full min-w-[220px] mb-2 rounded-xl overflow-hidden shadow-inner border border-white/10 bg-zinc-900">
+                    <div className="relative w-[280px] sm:w-[320px] h-48 sm:h-56 mb-2 rounded-xl overflow-hidden shadow-inner border border-white/10 bg-zinc-900 max-w-full">
                         <img
                             src={message.metadata.imageUrl}
                             alt="Shared image"
