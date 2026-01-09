@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { Loader2, ArrowLeft, MapPin, Clock, Utensils, User, Trash2, CheckCircle, XCircle, Flame, CookingPot, ChefHat } from "lucide-react"
+import { Loader2, ArrowLeft, MapPin, Clock, Utensils, User, Trash2, CheckCircle, XCircle, Flame, CookingPot, ChefHat, Star } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import Link from "next/link"
+import { FeedbackModal } from "@/components/feed/feedback-modal"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { SpiceLevel } from "@/types/messaging"
 import { formatReadableDate, formatRelativeTime, formatMonthYear } from "@/lib/utils"
@@ -41,6 +42,11 @@ interface FoodPost {
   spiceLevel: SpiceLevel
   ingredients: string
   cookedAt?: string
+  rating: number | null
+  review: string | null
+  reviewedAt: string | null
+  claimedByUserId: string | null
+  isClaimant?: boolean
 }
 
 interface Request {
@@ -60,11 +66,13 @@ export default function FoodDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
 
   const fetchData = async () => {
     try {
       const rawPost = (await api.getFoodPost(params.id as string)) as any
-      console.log('📦 Food post raw data:', rawPost)
+      console.log('📦 Food post FULL raw data:', JSON.stringify(rawPost, null, 2))
 
       // Normalize data to handle backend inconsistencies
       const postData: FoodPost = {
@@ -72,7 +80,17 @@ export default function FoodDetailPage() {
         ownerName: rawPost.ownerName || rawPost.userName || rawPost.user?.name || rawPost.author?.name || "Unknown Foodie",
         ownerId: rawPost.ownerId || rawPost.userId || rawPost.user?.id || rawPost.author?.id,
         ownerJoinDate: rawPost.ownerJoinDate || rawPost.user?.joinDate || rawPost.author?.joinDate || rawPost.joinDate,
+        claimedByUserId: rawPost.claimedByUserId || rawPost.claimedBy || rawPost.recipientId || rawPost.claimed_by_user_id || rawPost.claimedBy_Id || rawPost.claimantId || rawPost.claimant_id || rawPost.claimerId || rawPost.claimer_id || rawPost.recipient_id || rawPost.receiverId || rawPost.receiver_id || rawPost.takerId || rawPost.taker_id || rawPost.acceptedUserId || rawPost.accepted_user_id,
+        isClaimant: rawPost.isClaimant || rawPost.is_claimant || false,
+        rating: rawPost.rating ?? rawPost.Rating ?? rawPost.star_rating ?? rawPost.starRating ?? rawPost.RatingValue,
+        review: rawPost.review ?? rawPost.Review ?? rawPost.comment ?? rawPost.Comment ?? rawPost.feedback_comment
       }
+      console.log('👤 Normalized post data:', {
+        postId: postData.id,
+        currentUserId,
+        claimedByUserId: postData.claimedByUserId,
+        isClaimant: !!(currentUserId && postData.claimedByUserId && postData.claimedByUserId === currentUserId)
+      })
 
       setPost(postData)
 
@@ -98,6 +116,14 @@ export default function FoodDetailPage() {
 
   useEffect(() => {
     fetchData()
+    // Fetch user for ID
+    api.getMe().then((data: any) => {
+      const uid = data?.id || data?.uuid || data?.sub || data?.userId || data?.ID || data?.UID
+      console.log('🆔 currentUserId from getMe:', uid)
+      if (uid) setCurrentUserId(uid)
+    }).catch((err) => {
+      console.error('❌ Failed to fetch user ID:', err)
+    })
   }, [params.id])
 
   // Listen for new request notifications (for food owners)
@@ -134,17 +160,19 @@ export default function FoodDetailPage() {
     try {
       await api.deleteFoodPost(params.id as string)
       toast({
-        title: "Post successfully removed",
-        description: "Your food post is no longer visible to the community.",
+        title: "Post removed",
+        description: "Your post has been successfully removed.",
       })
       router.push("/feed")
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to delete",
+        title: "Couldn't remove post",
         description: error instanceof Error ? error.message : "Something went wrong.",
       })
-      setActionLoading(null) // Only reset if failed, otherwise we redirect
+    } finally {
+      setActionLoading(null)
+      setIsDeleteModalOpen(false)
     }
   }
 
@@ -220,6 +248,7 @@ export default function FoodDetailPage() {
       case "requested":
         return "bg-status-requested/20 text-status-requested border-status-requested/30"
       case "taken":
+      case "claimed":
         return "bg-status-taken/20 text-status-taken border-status-taken/30"
       default:
         return ""
@@ -350,6 +379,47 @@ export default function FoodDetailPage() {
                   </Button>
                 )}
               </div>
+
+              {/* Feedback Button for Recipient */}
+              {!post.isOwner && post.status === "claimed" && currentUserId && (post.isClaimant || post.claimedByUserId === currentUserId) && post.rating === null && (
+                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 flex flex-col items-center gap-3 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <p className="font-bold text-amber-500">How was the food?</p>
+                    <p className="text-sm text-muted-foreground">Share your experience with {post.ownerName}.</p>
+                  </div>
+                  <Button
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold gap-2"
+                    onClick={() => setIsFeedbackModalOpen(true)}
+                  >
+                    <Star className="h-4 w-4" />
+                    Leave Feedback
+                  </Button>
+                </div>
+              )}
+
+              {/* Display Review if it exists */}
+              {(post.rating || post.review) && (
+                <div className="p-4 rounded-xl bg-zinc-900/50 border border-border/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Recipient Feedback</h4>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className={`h-3 w-3 ${s <= (post.rating || 0) ? "fill-amber-500 text-amber-500" : "text-zinc-700"}`} />
+                      ))}
+                    </div>
+                  </div>
+                  {post.review && (
+                    <p className="text-base italic text-zinc-300 leading-relaxed">
+                      "{post.review}"
+                    </p>
+                  )}
+                  {post.reviewedAt && (
+                    <p className="text-[10px] text-zinc-500 text-right">
+                      Reviewed on {formatReadableDate(post.reviewedAt)}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <Separator />
 
@@ -498,6 +568,14 @@ export default function FoodDetailPage() {
         </main>
 
         <BottomNav />
+
+        <FeedbackModal
+          isOpen={isFeedbackModalOpen}
+          onClose={() => setIsFeedbackModalOpen(false)}
+          postId={post.id || (params.id as string)}
+          postTitle={post.title}
+          onSuccess={fetchData}
+        />
       </div>
 
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>

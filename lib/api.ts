@@ -319,6 +319,12 @@ export const api = {
       method: "PUT",
     }),
 
+  submitFeedback: (id: string, data: { rating: number; review?: string }) =>
+    apiRequest(`/food-posts/${id}/feedback`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Hunger Broadcasts
   createHungerBroadcast: (data: any) =>
     apiRequest("/hunger-broadcasts", {

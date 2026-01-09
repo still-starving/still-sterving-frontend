@@ -139,17 +139,15 @@ export default function FeedPage() {
 
   const availableFoodItems = useMemo(() => {
     return enrichedFoodItems.filter((item) => {
-      const expiryDate = new Date(item.expiryDate)
-      const now = new Date()
-      return expiryDate > now && (item.status === "available" || item.status === "requested")
+      // User requested: "if its available shift it to the available food"
+      return item.status === "available" || item.status === "requested"
     })
   }, [enrichedFoodItems])
 
   const expiredFoodItems = useMemo(() => {
     return enrichedFoodItems.filter((item) => {
-      const expiryDate = new Date(item.expiryDate)
-      const now = new Date()
-      return expiryDate <= now || item.status === "taken"
+      // User requested: "if not shift it to the expired/taken section"
+      return item.status !== "available" && item.status !== "requested"
     })
   }, [enrichedFoodItems])
 

@@ -6,10 +6,11 @@ import { TopNav } from "@/components/layout/top-nav"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { AuthGuard } from "@/components/layout/auth-guard"
 import { Badge } from "@/components/ui/badge"
+import { FeedbackModal } from "@/components/feed/feedback-modal"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { Loader2, MapPin, User, Calendar, MessageCircle, ChevronRight, Utensils, Info } from "lucide-react"
+import { Loader2, MapPin, User, Calendar, MessageCircle, ChevronRight, Utensils, Info, Star } from "lucide-react"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -17,6 +18,7 @@ import { formatRelativeTime } from "@/lib/utils"
 
 interface Request {
   id: string
+  foodPostId: string
   postTitle: string  // Backend uses postTitle, not foodTitle
   postOwnerName: string  // Backend uses postOwnerName, not foodOwnerName
   postOwnerId?: string
@@ -25,6 +27,8 @@ interface Request {
   pickupLocation?: string
   message?: string
   conversationId?: string
+  claimedByUserId?: string
+  rating?: number
 }
 
 export default function MyRequestsPage() {
@@ -33,6 +37,8 @@ export default function MyRequestsPage() {
   const { lastMessage } = useWebSocket()
   const [requests, setRequests] = useState<Request[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [feedbackPost, setFeedbackPost] = useState<{ id: string, title: string } | null>(null)
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -65,8 +71,20 @@ export default function MyRequestsPage() {
       }
     }
 
+    const fetchProfile = async () => {
+      try {
+        const data = await api.getMe() as any
+        const uid = data?.id || data?.uuid || data?.sub || data?.userId || data?.ID || data?.UID
+        console.log('🆔 currentUserId from getMe (Requests):', uid)
+        if (uid) setCurrentUserId(uid)
+      } catch (error) {
+        console.error("User fetch failed:", error)
+      }
+    }
+
     fetchRequests()
     markAsViewed()
+    fetchProfile()
   }, [])
 
   // Listen for request status updates (for requesters)
@@ -255,6 +273,46 @@ export default function MyRequestsPage() {
                           </Link>
                         </div>
                       )}
+
+                      {request.status === "accepted" && (!request.rating || request.rating === 0) && (
+                        <div className="pt-2">
+                          <Button
+                            variant="outline"
+                            className="w-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 rounded-xl font-bold gap-2"
+                            onClick={() => {
+                              console.log('🔍 Raw request data for feedback:', JSON.stringify(request, null, 2))
+                              const targetPostId = request.foodPostId || (request as any).postId || (request as any).food_post_id
+                              console.log('📝 Opening feedback for:', {
+                                targetPostId,
+                                currentUserId,
+                                status: request.status
+                              })
+                              if (!targetPostId) {
+                                console.error('❌ Missing foodPostId in request:', request)
+                                toast({
+                                  variant: "destructive",
+                                  title: "Couldn't open feedback",
+                                  description: "We're missing the post information. Please try again later.",
+                                })
+                                return
+                              }
+                              setFeedbackPost({ id: targetPostId, title: request.postTitle })
+                            }}
+                          >
+                            <Star className="h-4 w-4" />
+                            Leave Feedback
+                          </Button>
+                        </div>
+                      )}
+
+                      {request.rating && request.rating > 0 && (
+                        <div className="pt-2 flex items-center gap-2">
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 font-bold">
+                            <Star className="h-3 w-3 mr-1 fill-amber-500" />
+                            FEEDBACK SUBMITTED ({request.rating})
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -264,6 +322,17 @@ export default function MyRequestsPage() {
         </main>
 
         <BottomNav />
+
+        <FeedbackModal
+          isOpen={!!feedbackPost}
+          onClose={() => setFeedbackPost(null)}
+          postId={feedbackPost?.id || ""}
+          postTitle={feedbackPost?.title || ""}
+          onSuccess={() => {
+            // Refresh requests to update rating status
+            api.getMyRequests().then((data: any) => setRequests(data))
+          }}
+        />
       </div>
     </AuthGuard>
   )

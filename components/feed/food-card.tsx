@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Map, Clock, User, Utensils, Play, MessageCircle, Flame, Leaf, CookingPot, ChefHat } from "lucide-react"
+import { MapPin, Map, Clock, User, Utensils, Play, MessageCircle, Flame, Leaf, CookingPot, ChefHat, Star } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
@@ -24,7 +24,7 @@ interface FoodCardProps {
     latitude?: number // Add optional lat/lng
     longitude?: number
     expiryDate: string
-    status: "available" | "requested" | "taken"
+    status: "available" | "requested" | "taken" | "claimed"
     ownerName: string
     ownerId: string
     imageUrls?: string[]
@@ -33,9 +33,11 @@ interface FoodCardProps {
     spiceLevel?: SpiceLevel
     ingredients?: string
     cookedAt?: string
+    rating: number | null
+    review: string | null
   }
   onUpdate?: () => void
-  userLocation?: { lat: number; lng: number } // Add userLocation prop
+  userLocation?: { lat: number; lng: number }
 }
 
 export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
@@ -53,8 +55,10 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const isExpired = new Date(post.expiryDate) <= new Date()
-  const isTaken = post.status === "taken"
-  const isInactive = isExpired || isTaken
+  const isInactive = isExpired || post.status === "taken" || post.status === "claimed"
+
+  const displayRating = post.rating
+  const displayReview = post.review
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -63,6 +67,7 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
       case "requested":
         return "bg-amber-500 text-white"
       case "taken":
+      case "claimed":
         return "bg-slate-500 text-white"
       default:
         return ""
@@ -219,6 +224,12 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
                 {getSpiceInfo(post.spiceLevel).emoji} {getSpiceInfo(post.spiceLevel).label.toUpperCase()}
               </Badge>
             )}
+            {displayRating && displayRating > 0 && (
+              <Badge className="bg-black/60 backdrop-blur-md text-amber-400 border-amber-400/30 flex items-center gap-1 font-bold">
+                <Star className="h-3 w-3 fill-amber-400" />
+                {displayRating.toFixed(1)}
+              </Badge>
+            )}
           </div>
 
           {/* Image Navigation - Only show if multiple images and hovered */}
@@ -283,6 +294,19 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
                   {isExpired ? "Expired" : `Expires ${formatRelativeTime(post.expiryDate)}`}
                 </span>
               </div>
+              {displayRating && displayRating > 0 && (
+                <div className="flex items-center gap-1 text-amber-500">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        className={`h-3 w-3 ${s <= displayRating! ? "fill-amber-500 text-amber-500" : "text-zinc-600"}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-bold">({displayRating})</span>
+                </div>
+              )}
             </div>
 
             {/* Ingredients */}
@@ -294,6 +318,18 @@ export function FoodCard({ post, onUpdate, userLocation }: FoodCardProps) {
                 </div>
                 <p className="text-xs text-gray-300 line-clamp-2 italic leading-relaxed">
                   {post.ingredients}
+                </p>
+              </div>
+            )}
+
+            {/* Review Snippet */}
+            {displayReview && (
+              <div className="space-y-1 p-2 rounded-lg bg-zinc-800/30 border border-zinc-700/30 relative">
+                <div className="flex items-center gap-1 text-[9px] font-bold text-amber-500/70 uppercase tracking-tighter">
+                  Neighbor Review
+                </div>
+                <p className="text-[11px] text-gray-400 italic line-clamp-2 leading-tight">
+                  "{displayReview}"
                 </p>
               </div>
             )}

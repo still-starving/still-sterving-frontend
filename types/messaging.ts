@@ -121,7 +121,7 @@ export interface FoodFeedItem {
     quantity: string
     location: string
     expiryDate: string
-    status: 'available' | 'requested' | 'taken'
+    status: 'available' | 'requested' | 'taken' | 'claimed' | 'expired'
     ownerName: string
     ownerId: string
     imageUrls?: string[]
@@ -132,6 +132,10 @@ export interface FoodFeedItem {
     cookedAt?: string
     latitude?: number
     longitude?: number
+    rating: number | null
+    review: string | null
+    reviewedAt: string | null
+    claimedByUserId: string | null
 }
 
 export interface HungerFeedItem {

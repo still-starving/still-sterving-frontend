@@ -40,6 +40,7 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const data = (await api.getProfile()) as Profile
+        console.log('👤 Profile raw data:', JSON.stringify(data, null, 2))
         setProfile(data)
         setRadius(data.preferredRadiusKm || 1)
       } catch (error) {
